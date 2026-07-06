@@ -1,0 +1,1 @@
+export { BrandsSection } from './index'
