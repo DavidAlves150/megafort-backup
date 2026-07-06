@@ -51,7 +51,7 @@ export default function FinanceiroPage() {
     { title: "Faturamento", value: stats.faturamento, icon: TrendingUp, color: "text-blue-600", bg: "bg-blue-50" },
     { title: "Lucro Bruto", value: stats.lucroBruto, icon: DollarSign, color: "text-green-600", bg: "bg-green-50" },
     { title: "Despesas", value: stats.despesas, icon: ArrowDownCircle, color: "text-red-600", bg: "bg-red-50" },
-    { title: "Saldo Líquido", value: stats.saldoLiquido, icon: Wallet, color: "text-magenta-600", bg: "bg-magenta-50" },
+    { title: "Saldo Líquido", value: stats.saldoLiquido, icon: Wallet, color: "text-primary", bg: "bg-magenta-50" },
   ];
 
   return (
@@ -99,7 +99,7 @@ export default function FinanceiroPage() {
           <Card className="border-none shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Filter className="w-5 h-5 text-magenta-600" /> Vendas Recentes
+                <Filter className="w-5 h-5 text-primary" /> Vendas Recentes
               </CardTitle>
             </CardHeader>
             <CardContent>

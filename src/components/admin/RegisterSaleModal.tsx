@@ -60,13 +60,13 @@ export function RegisterSaleModal({ products }: { products: any[] }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-magenta-600 hover:bg-magenta-700 text-white gap-2">
+        <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
           <ShoppingCart className="w-4 h-4" /> Registrar Venda
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-white/90 backdrop-blur-xl border-magenta-100">
         <DialogHeader>
-          <DialogTitle className="text-magenta-900">Nova Venda Manual</DialogTitle>
+          <DialogTitle className="text-primary">Nova Venda Manual</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
@@ -113,7 +113,7 @@ export function RegisterSaleModal({ products }: { products: any[] }) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full bg-magenta-600 hover:bg-magenta-700" disabled={loading}>
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
             {loading ? "Processando..." : "Confirmar Venda"}
           </Button>
         </form>
