@@ -64,7 +64,7 @@ export default function FinanceiroPage() {
             <p className="text-gray-500">Gestão de lucros e fluxo de caixa real</p>
           </div>
           <div className="flex gap-3">
-            <button variant="outline" className="gap-2">
+            <button  className="gap-2">
               <Calendar className="w-4 h-4" /> Este Mês
             </button>
             <RegisterSaleModal products={products} />
@@ -80,13 +80,13 @@ export default function FinanceiroPage() {
               transition={{ delay: index * 0.1 }}
             >
               <div className="border-none shadow-sm hover:shadow-md transition-shadow">
-                <divHeader className="flex flex-row items-center justify-between pb-2">
-                  <divTitle className="text-sm font-medium text-gray-600">{card.title}</h3>
+                <div className="flex flex-row items-center justify-between pb-2">
+                  <h3 className="text-sm font-medium text-gray-600">{card.title}</h3>
                   <div className={`${card.bg} ${card.color} p-2 rounded-lg`}>
                     <card.icon className="w-4 h-4" />
                   </div>
                 </div>
-                <divContent>
+                <div>
                   <div className="text-2xl font-bold">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(card.value)}
                   </div>
@@ -98,12 +98,12 @@ export default function FinanceiroPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="border-none shadow-sm">
-            <divHeader>
-              <divTitle className="text-lg font-semibold flex items-center gap-2">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Filter className="w-5 h-5 text-primary" /> Vendas Recentes
               </h3>
             </div>
-            <divContent>
+            <div>
               <div className="text-center py-10 text-gray-400">
                 Nenhuma venda registrada hoje.
               </div>
@@ -111,10 +111,10 @@ export default function FinanceiroPage() {
           </div>
 
           <div className="border-none shadow-sm">
-            <divHeader>
-              <divTitle className="text-lg font-semibold">Resumo por Canal</h3>
+            <div>
+              <h3 className="text-lg font-semibold">Resumo por Canal</h3>
             </div>
-            <divContent>
+            <div>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                   <span className="font-medium">WhatsApp</span>

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+
+
+
+
+
 import { createClient } from "@/lib/supabase/client";
 const supabase = createClient();
 import { ShoppingCart, Smartphone, Store } from "lucide-react";
@@ -12,7 +12,7 @@ import { ShoppingCart, Smartphone, Store } from "lucide-react";
 export function RegisterSaleModal({ products }: { products: any[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  
   
   const [formData, setFormData] = useState({
     produto_id: '',
@@ -49,68 +49,68 @@ export function RegisterSaleModal({ products }: { products: any[] }) {
 
       if (error) throw error;
 
-      toast({ title: "Venda registrada!", description: "O lucro foi contabilizado no financeiro." });
+      alert("Venda registrada!");
       setOpen(false);
     } catch (error: any) {
-      toast({ title: "Erro ao registrar", description: error.message, variant: "destructive" });
+      alert("Erro: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    {open && (
+      
         <button className="bg-primary hover:bg-primary/90 text-white gap-2">
           <ShoppingCart className="w-4 h-4" /> Registrar Venda
         </button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white/90 backdrop-blur-xl border-magenta-100">
-        <DialogHeader>
-          <DialogTitle className="text-primary">Nova Venda Manual</DialogTitle>
-        </DialogHeader>
+      
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"><div className="bg-card border border-border w-full max-w-md rounded-2xl p-6 relative">
+        <div className="mb-6">
+          <h2 className="text-xl font-display tracking-widest">NOVA VENDA</h2><button onClick={() => setOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">✕</button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
-            <Label>Produto</Label>
-            <Select onValueChange={handleProductChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o produto" />
-              </SelectTrigger>
-              <SelectContent>
+            <label className="text-xs font-body text-muted-foreground uppercase tracking-widest">Produto</label>
+            <select className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" onChange={(e) => handleProductChange(e.target.value)}>
+              
+                <option value="">Selecione o produto</option>
+              
+              
                 {products.map(p => (
-                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                  <option key={p.id} value={p.id}>{p.nome}</option>
                 ))}
-              </SelectContent>
-            </Select>
+              
+            </select>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Quantidade</Label>
-              <Input type="number" min="1" value={formData.quantidade} onChange={e => setFormData({...formData, quantidade: Number(e.target.value)})} />
+              <label className="text-xs font-body text-muted-foreground uppercase tracking-widest">Quantidade</label>
+              <input className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" type="number" min="1" value={formData.quantidade} onChange={e => setFormData({...formData, quantidade: Number(e.target.value)})} />
             </div>
             <div className="space-y-2">
-              <Label>Canal</Label>
-              <Select onValueChange={v => setFormData({...formData, canal_venda: v})} defaultValue="WhatsApp">
-                <SelectTrigger>
+              <label className="text-xs font-body text-muted-foreground uppercase tracking-widest">Canal</label>
+              <select className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" onChange={(e) => setFormData({...formData, canal_venda: e.target.value})} defaultValue="WhatsApp">
+                
                   <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="WhatsApp"><div className="flex items-center gap-2"><Smartphone className="w-4 h-4" /> WhatsApp</div></SelectItem>
-                  <SelectItem value="Loja Física"><div className="flex items-center gap-2"><Store className="w-4 h-4" /> Loja Física</div></SelectItem>
-                </SelectContent>
-              </Select>
+                
+                
+                  <option value="WhatsApp"><div className="flex items-center gap-2"><Smartphone className="w-4 h-4" /> WhatsApp</div></SelectItem>
+                  <option value="Loja Física"><div className="flex items-center gap-2"><Store className="w-4 h-4" /> Loja Física</div></SelectItem>
+                
+              </select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Preço de Venda (Un)</Label>
-              <Input type="number" step="0.01" value={formData.valor_venda} onChange={e => setFormData({...formData, valor_venda: Number(e.target.value)})} />
+              <label className="text-xs font-body text-muted-foreground uppercase tracking-widest">Preço de Venda (Un)</label>
+              <input className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" type="number" step="0.01" value={formData.valor_venda} onChange={e => setFormData({...formData, valor_venda: Number(e.target.value)})} />
             </div>
             <div className="space-y-2">
-              <Label>Custo (Un)</Label>
-              <Input type="number" step="0.01" value={formData.valor_custo} onChange={e => setFormData({...formData, valor_custo: Number(e.target.value)})} />
+              <label className="text-xs font-body text-muted-foreground uppercase tracking-widest">Custo (Un)</label>
+              <input className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" type="number" step="0.01" value={formData.valor_custo} onChange={e => setFormData({...formData, valor_custo: Number(e.target.value)})} />
             </div>
           </div>
 
@@ -118,7 +118,8 @@ export function RegisterSaleModal({ products }: { products: any[] }) {
             {loading ? "Processando..." : "Confirmar Venda"}
           </button>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div></div>
+    )} 
+ <button onClick={() => setOpen(true)} className="bg-[var(--brand-button)] text-black px-4 py-2 rounded-xl flex items-center gap-2 font-display text-xs tracking-widest hover:opacity-90 transition-all"><ShoppingCart size={14} /> REGISTRAR VENDA</button>
   );
 }
