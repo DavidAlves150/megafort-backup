@@ -17,7 +17,8 @@ const NAV = [
   { href: '/admin/categorias',    label: 'Categorias',   icon: Grid3X3 },
   { href: '/admin/marcas',        label: 'Marcas',       icon: Award },
   { href: '/admin/banners',       label: 'Banners',      icon: Image },
-  { href: '/admin/relatorios',    label: 'Relatórios',   icon: BarChart3, DollarSign },
+  { href: '/admin/relatorios',    label: 'Relatórios',   icon: BarChart3 },
+  { href: '/admin/financeiro',    label: 'Financeiro',   icon: DollarSign },
   { href: '/admin/configuracoes', label: 'Configurações',icon: Settings },
 ]
 

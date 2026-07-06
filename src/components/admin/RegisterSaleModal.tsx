@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+const supabase = createClient();
 import { ShoppingCart, Smartphone, Store } from "lucide-react";
 
 export function RegisterSaleModal({ products }: { products: any[] }) {
@@ -60,9 +61,9 @@ export function RegisterSaleModal({ products }: { products: any[] }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
+        <button className="bg-primary hover:bg-primary/90 text-white gap-2">
           <ShoppingCart className="w-4 h-4" /> Registrar Venda
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-white/90 backdrop-blur-xl border-magenta-100">
         <DialogHeader>
@@ -113,9 +114,9 @@ export function RegisterSaleModal({ products }: { products: any[] }) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+          <button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
             {loading ? "Processando..." : "Confirmar Venda"}
-          </Button>
+          </button>
         </form>
       </DialogContent>
     </Dialog>

@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { PageTransition } from "@/components/ui/PageTransition";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+
 import { RegisterSaleModal } from "@/components/admin/RegisterSaleModal";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+const supabase = createClient();
 import { 
   TrendingUp, 
   DollarSign, 
@@ -63,9 +64,9 @@ export default function FinanceiroPage() {
             <p className="text-gray-500">Gestão de lucros e fluxo de caixa real</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="gap-2">
+            <button variant="outline" className="gap-2">
               <Calendar className="w-4 h-4" /> Este Mês
-            </Button>
+            </button>
             <RegisterSaleModal products={products} />
           </div>
         </div>
@@ -78,42 +79,42 @@ export default function FinanceiroPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">{card.title}</CardTitle>
+              <div className="border-none shadow-sm hover:shadow-md transition-shadow">
+                <divHeader className="flex flex-row items-center justify-between pb-2">
+                  <divTitle className="text-sm font-medium text-gray-600">{card.title}</h3>
                   <div className={`${card.bg} ${card.color} p-2 rounded-lg`}>
                     <card.icon className="w-4 h-4" />
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <divContent>
                   <div className="text-2xl font-bold">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(card.value)}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="border-none shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <div className="border-none shadow-sm">
+            <divHeader>
+              <divTitle className="text-lg font-semibold flex items-center gap-2">
                 <Filter className="w-5 h-5 text-primary" /> Vendas Recentes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h3>
+            </div>
+            <divContent>
               <div className="text-center py-10 text-gray-400">
                 Nenhuma venda registrada hoje.
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border-none shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Resumo por Canal</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="border-none shadow-sm">
+            <divHeader>
+              <divTitle className="text-lg font-semibold">Resumo por Canal</h3>
+            </div>
+            <divContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                   <span className="font-medium">WhatsApp</span>
@@ -124,8 +125,8 @@ export default function FinanceiroPage() {
                   <span className="text-blue-600 font-bold">R$ 0,00</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </PageTransition>
