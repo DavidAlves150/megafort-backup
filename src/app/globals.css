@@ -270,4 +270,4 @@ h1, h2, h3, h4, h5, h6 {
 .bg-surface-2 { @apply bg-gray-50 dark:bg-dark-3; }
 .text-primary-content { @apply text-gray-900 dark:text-white; }
 .text-secondary-content { @apply text-gray-600 dark:text-gray-400; }
-.border-surface { @apply border-gray-200 dark:border-white/8; }
+.border-surface { @apply border-gray-200 dark:border-white/10; }
