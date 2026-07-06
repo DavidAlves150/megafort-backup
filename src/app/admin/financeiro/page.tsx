@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { PageTransition } from "@/components/ui/PageTransition";
 
 
-import { RegisterSaleModal } from "@/components/admin/RegisterSaleModal";
+import RegisterSaleModal from "@/components/admin/RegisterSaleModal";
 import { createClient } from "@/lib/supabase/client";
 const supabase = createClient();
 import { 
