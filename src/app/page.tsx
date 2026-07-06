@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/Header'
-import { ParticlesBackground } from "@/components/ui/ParticlesBackground";
+// import { ParticlesBackground } from "@/components/ui/ParticlesBackground";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/layout/WhatsAppButton'
@@ -35,7 +35,7 @@ export default async function HomePage() {
   return (
     <>
       <PageTransition>
-        <ParticlesBackground />
+        {/* <ParticlesBackground /> */}
         <Header />
       <main className="min-h-screen">
         <HeroSection banners={banners || []} />
