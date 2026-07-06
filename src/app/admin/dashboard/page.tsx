@@ -16,6 +16,22 @@ interface Stats {
 
 interface TopProd { id: string; nome: string; visualizacoes: number; cliques?: number }
 
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
+
 export default function DashboardPage() {
   const [stats,   setStats]   = useState<Stats | null>(null)
   const [recents, setRecents] = useState<any[]>([])
@@ -95,7 +111,7 @@ export default function DashboardPage() {
   ] : []
 
   return (
-    <div className="space-y-6">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-foreground text-2xl md:text-3xl tracking-widest">DASHBOARD</h1>
@@ -205,6 +221,6 @@ export default function DashboardPage() {
           </div>
         </>
       )}
-    </div>
+    </motion.div>
   )
 }

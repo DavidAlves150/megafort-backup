@@ -4,9 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutDashboard, Package, Grid3X3, Award, Image, Settings, Menu, X, LogOut, Plus, ChevronRight, AlertTriangle, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, Package, Grid3X3, Award, Image, Settings, Menu, X, LogOut, Plus, ChevronRight, AlertTriangle, BarChart3, DollarSign } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { PageTransition } from '@/components/ui/PageTransition'
+import { ParticlesBackground } from '@/components/ui/ParticlesBackground'
 
 const NAV = [
   { href: '/admin/dashboard',     label: 'Dashboard',    icon: LayoutDashboard },
@@ -15,7 +17,7 @@ const NAV = [
   { href: '/admin/categorias',    label: 'Categorias',   icon: Grid3X3 },
   { href: '/admin/marcas',        label: 'Marcas',       icon: Award },
   { href: '/admin/banners',       label: 'Banners',      icon: Image },
-  { href: '/admin/relatorios',    label: 'Relatórios',   icon: BarChart3 },
+  { href: '/admin/relatorios',    label: 'Relatórios',   icon: BarChart3, DollarSign },
   { href: '/admin/configuracoes', label: 'Configurações',icon: Settings },
 ]
 
@@ -108,8 +110,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </header>
 
-        <main className="flex-1 p-4 md:p-6">
-          {children}
+        <main className="flex-1 p-4 md:p-6 relative overflow-hidden">
+          <div className="fixed inset-0 pointer-events-none z-0">
+            <ParticlesBackground />
+          </div>
+          <div className="relative z-10">
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </div>
         </main>
       </div>
     </div>
