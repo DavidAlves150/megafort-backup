@@ -8,7 +8,7 @@ import { LayoutDashboard, Package, Grid3X3, Award, Image, Settings, Menu, X, Log
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { PageTransition } from '@/components/ui/PageTransition'
-import { ParticlesBackground } from '@/components/ui/ParticlesBackground'
+import ParticlesBackground from '@/components/ui/ParticlesBackground'
 
 const NAV = [
   { href: '/admin/dashboard',     label: 'Dashboard',    icon: LayoutDashboard },
