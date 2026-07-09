@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { ReactNode } from 'react';
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -8,7 +8,7 @@ import { LayoutDashboard, Package, Grid3X3, Award, Image, Settings, Menu, X, Log
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { PageTransition } from '@/components/ui/PageTransition'
-import ParticlesBackground from '@/components/ui/ParticlesBackground'
+
 
 const NAV = [
   { href: '/admin/dashboard',     label: 'Dashboard',    icon: LayoutDashboard },
@@ -113,7 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <main className="flex-1 p-4 md:p-6 relative overflow-hidden">
           <div className="fixed inset-0 pointer-events-none z-0">
-            <ParticlesBackground />
+            
           </div>
           <div className="relative z-10">
             <PageTransition>
