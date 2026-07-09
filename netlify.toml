@@ -6,6 +6,9 @@
   NODE_VERSION          = "22"
   NPM_FLAGS             = "--legacy-peer-deps"
   NEXT_TELEMETRY_DISABLED = "1"
+  NEXT_PUBLIC_SUPABASE_URL = "https://dpksjzfopgpytmfyydol.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwa3NqemZvcGdweXRtZnl5ZG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMTIyNzYsImV4cCI6MjA5NjY4ODI3Nn0.UzAWrkwHWkm19JBSY0WugI9ffccjaeA_0MJyIylMbzQ"
+  SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwa3NqemZvcGdweXRtZnl5ZG9sIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImiYXQiOjE3ODExMTIyNzYsImV4cCI6MjA5NjY4ODI3Nn0.cfVV-kzC_rHWHzz8vFBGpHyH_O0RFnt4OWQuRF8AvuA"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
