@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, Grid3X3, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +16,8 @@ export default function CategoriasPage() {
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState<Categoria|null>(null)
   const [form, setForm] = useState(empty)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   useEffect(()=>{ load() },[])
@@ -26,12 +28,19 @@ export default function CategoriasPage() {
   }
 
   function openNew() { setEditing(null); setForm({...empty, ordem:cats.length}); setOpen(true) }
-  function openEdit(c:Categoria) { setEditing(c); setForm({ nome:c.nome,slug:c.slug,descricao:c.descricao||'',icone:c.icone,cor:c.cor,ordem:c.ordem,ativa:c.ativa }); setOpen(true) }
+  function openEdit(c:Categoria) { setEditing(c); setForm({ nome:c.nome,slug:c.slug,descricao:c.descricao||'',icone:c.icone,cor:c.cor,ordem:c.ordem,ativa:c.ativa, imagem_url: c.imagem_url || null }); setImageFile(null); setOpen(true) }
 
   async function save() {
     if (!form.nome) { toast.error('Nome obrigatório'); return }
     setSaving(true)
-    const payload = { ...form, slug: form.slug || slugify(form.nome) }
+    let imageUrl = editing?.imagem_url || null
+    if (imageFile) {
+      const filePath = `categorias/${editing?.id || Date.now()}-${imageFile.name}`
+      const { data, error: uploadError } = await supabase.storage.from("public").upload(filePath, imageFile, { cacheControl: "3600", upsert: true })
+      if (uploadError) { toast.error(uploadError.message); setSaving(false); return }
+      imageUrl = supabase.storage.from("public").getPublicUrl(filePath).data.publicUrl
+    }
+    const payload = { ...form, slug: form.slug || slugify(form.nome), imagem_url: imageUrl }
     if (editing) {
       const { error } = await supabase.from('categorias').update(payload).eq('id', editing.id)
       if (error) { toast.error(error.message); setSaving(false); return }
@@ -70,7 +79,9 @@ export default function CategoriasPage() {
             {cats.map((c,i)=>(
               <motion.div key={c.id} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.03}}
                 className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:`${c.cor}18`}}>{c.icone}</div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:`${c.cor}18`}}>
+                  {c.imagem_url ? <img src={c.imagem_url} alt={c.nome} className="w-full h-full object-cover rounded-xl" /> : c.icone}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-body font-semibold text-foreground text-sm">{c.nome}</p>
@@ -109,6 +120,16 @@ export default function CategoriasPage() {
               <div><label className="form-label">Ícone</label><input value={form.icone} onChange={e=>setForm({...form,icone:e.target.value})} className="form-input text-center text-xl"/></div>
               <div><label className="form-label">Cor</label><input type="color" value={form.cor} onChange={e=>setForm({...form,cor:e.target.value})} className="form-input h-11 p-1 cursor-pointer"/></div>
               <div><label className="form-label">Ordem</label><input type="number" value={form.ordem} onChange={e=>setForm({...form,ordem:Number(e.target.value)})} className="form-input"/></div>
+            </div>
+            <div>
+              <label className="form-label">Imagem da Categoria</label>
+              <input type="file" accept="image/*" onChange={e=>setImageFile(e.target.files?.[0] || null)} ref={fileInputRef} className="form-input"/>
+              {editing?.imagem_url && !imageFile && (
+                <p className="text-sm text-muted-foreground mt-2">Imagem atual: <a href={editing.imagem_url} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-primary)]">Ver Imagem</a></p>
+              )}
+              {imageFile && (
+                <p className="text-sm text-muted-foreground mt-2">Nova imagem selecionada: {imageFile.name}</p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <label className="form-label mb-0">Ativa</label>
