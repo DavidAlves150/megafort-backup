@@ -21,7 +21,11 @@ export function CategoriesSection({ categorias }: { categorias: Categoria[] }) {
             viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
             <Link href={`/catalogo?categoria=${cat.slug}`}
               className="group flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-card border border-border hover:border-[var(--brand-primary)]/40 hover:-translate-y-1 transition-all duration-300">
-              <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icone}</span>
+              {cat.imagem_url ? (
+                <img src={cat.imagem_url} alt={cat.nome} className="w-12 h-12 object-contain group-hover:scale-110 transition-transform" />
+              ) : (
+                <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icone}</span>
+              )}
               <span className="font-body font-semibold text-foreground text-sm text-center tracking-wide leading-tight">{cat.nome}</span>
               <ArrowRight size={13} className="text-muted-foreground group-hover:text-[var(--brand-primary)] transition-colors" />
             </Link>
