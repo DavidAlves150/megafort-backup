@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Particles from "@tsparticles/react";
-import { initParticlesEngine } from "@tsparticles/engine";
+import { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import type { Container, Engine } from "@tsparticles/engine";
 
@@ -10,7 +10,7 @@ export default function ParticlesBackground() {
     const [init, setInit] = useState(false);
 
     useEffect(() => {
-        iniinitParticlesEngine(async (engine: Engine) => {
+        initParticlesEngine(async (engine: Engine) => {
             await loadSlim(engine);
         }).then(() => {
             setInit(true);

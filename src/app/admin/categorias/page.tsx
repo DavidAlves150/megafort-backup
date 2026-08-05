@@ -7,7 +7,7 @@ import { Categoria } from '@/types'
 import { slugify } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
-const empty = { nome:'', slug:'', descricao:'', icone:'📦', cor:'#00FF41', ordem:0, ativa:true }
+const empty = { nome:'', slug:'', descricao:'', icone:'📦', cor:'#00FF41', ordem:0, ativa:true, imagem_url: null as string | null }
 
 export default function CategoriasPage() {
   const [cats, setCats] = useState<Categoria[]>([])
