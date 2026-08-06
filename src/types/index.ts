@@ -56,7 +56,7 @@ export interface Produto {
   preco_compra: number
   preco_venda: number
   preco_promocional: number | null
-  estoque: number
+  estoque: number // Será a soma do estoque das variações, se houver
   sku: string | null
   categoria_id: string | null
   marca_id: string | null
@@ -170,14 +170,16 @@ export interface ProdutoFormData {
   descricao_curta: string
   preco_compra: number
   preco_venda: number
-  preco_promocional?: number | null
-  estoque: number
-  sku: string
+  preco_promocional: number | null
+  estoque: number // Será a soma do estoque das variações, se houver
+  variacoes?: ProductVariation[]
+  sku: string | null
   categoria_id?: string | null
   marca_id?: string | null
   em_destaque: boolean
   em_promocao: boolean
   ativo: boolean
+  variacoes?: ProductVariationSchema[]
 }
 
 export interface ProdutoFiltros {
@@ -191,4 +193,31 @@ export interface ProdutoFiltros {
   preco_max?: number
   page?: number
   limit?: number
+}
+
+export interface ProductVariation {
+  id: string
+  produto_id: string
+  nome: string
+  ordem: number
+  criado_em: string
+  atualizado_em: string
+}
+
+export interface ProductVariationOption {
+  id: string
+  variation_id: string
+  valor: string
+  ordem: number
+  criado_em: string
+  atualizado_em: string
+}
+
+export interface ProductStockVariation {
+  id: string
+  produto_id: string
+  option_id: string
+  estoque: number
+  criado_em: string
+  atualizado_em: string
 }

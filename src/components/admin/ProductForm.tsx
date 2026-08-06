@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
-import { Save, Loader2, DollarSign, Package, Tag, Layers, ArrowLeft } from 'lucide-react'
+import { Save, Loader2, DollarSign, Package, Tag, Layers, ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { MediaUpload } from './MediaUpload'
-import { produtoSchema, type ProdutoSchema } from '@/lib/validations'
+import { produtoSchema, type ProdutoSchema, type ProductVariationSchema, type ProductVariationOptionSchema } from '@/lib/validations'
 import { slugify, formatCurrency, calcLucroPotencial } from '@/lib/utils'
-import { Categoria, Marca, Produto } from '@/types'
+import { Categoria, Marca, Produto, ProductVariation, ProductVariationOption, ProductStockVariation } from '@/types'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
@@ -23,20 +23,21 @@ export function ProductForm({ produto }: Props) {
   const [marcas,     setMarcas]     = useState<Marca[]>([])
   const [imgUrls,    setImgUrls]    = useState<string[]>([])
   const [vidUrls,    setVidUrls]    = useState<string[]>([])
+  const [hasVariations, setHasVariations] = useState(false)
   const router  = useRouter()
   const supabase = createClient()
   const isEdit   = !!produto
 
-  const { register, handleSubmit, control, watch, setValue, formState: { errors, isSubmitting } } = useForm<ProdutoSchema>({
+  const { register, handleSubmit, control, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<ProdutoSchema>({
     resolver: zodResolver(produtoSchema),
     defaultValues: produto ? {
       nome: produto.nome, descricao: produto.descricao || '', descricao_curta: produto.descricao_curta || '',
       preco_compra: produto.preco_compra, preco_venda: produto.preco_venda,
       preco_promocional: produto.preco_promocional ?? undefined,
-      estoque: produto.estoque, sku: produto.sku || '',
+      sku: produto.sku || '',
       categoria_id: produto.categoria_id ?? undefined, marca_id: produto.marca_id ?? undefined,
       em_destaque: produto.em_destaque, em_promocao: produto.em_promocao, ativo: produto.ativo,
-    } : { nome:'', descricao:'', descricao_curta:'', preco_compra:0, preco_venda:0, estoque:0, em_destaque:false, em_promocao:false, ativo:true },
+    } : { nome:'', descricao:'', descricao_curta:'', preco_compra:0, preco_venda:0, em_destaque:false, em_promocao:false, ativo:true, variacoes: [] },
   })
 
   const wNome    = watch('nome')
@@ -67,9 +68,23 @@ export function ProductForm({ produto }: Props) {
   const onSubmit = async (data: ProdutoSchema) => {
     try {
       const slug   = slugify(data.nome)
+      
+      // Calcular o estoque total somando as variações (se houver)
+      let estoqueTotal = 0
+      if (data.variacoes && data.variacoes.length > 0) {
+        data.variacoes.forEach(v => {
+          v.opcoes.forEach(o => {
+            estoqueTotal += Number(o.estoque) || 0
+          })
+        })
+      }
+
+      const { variacoes, ...produtoData } = data
+
       const payload = {
-        ...data,
+        ...produtoData,
         slug,
+        estoque: estoqueTotal,
         preco_promocional: data.preco_promocional || null,
         categoria_id: data.categoria_id || null,
         marca_id: data.marca_id || null,
@@ -86,7 +101,7 @@ export function ProductForm({ produto }: Props) {
         produtoId = novo.id
       }
 
-      // Sync images
+      // Sync images & variations
       if (produtoId) {
         await supabase.from('product_images').delete().eq('produto_id', produtoId)
         if (imgUrls.length) {
@@ -99,6 +114,40 @@ export function ProductForm({ produto }: Props) {
           await supabase.from('product_videos').insert(
             vidUrls.map((url, i) => ({ produto_id: produtoId!, url, ordem: i }))
           )
+        }
+
+        // Sync variations
+        await supabase.from('product_variations').delete().eq('produto_id', produtoId)
+        if (data.variacoes && data.variacoes.length > 0) {
+          for (const [vIndex, v] of data.variacoes.entries()) {
+            const { data: varData, error: varError } = await supabase.from('product_variations').insert({
+              produto_id: produtoId,
+              nome: v.nome,
+              ordem: vIndex
+            }).select().single()
+
+            if (varError) throw varError
+
+            if (varData && v.opcoes && v.opcoes.length > 0) {
+              for (const [oIndex, op] of v.opcoes.entries()) {
+                const { data: optData, error: optError } = await supabase.from('product_variation_options').insert({
+                  variation_id: varData.id,
+                  valor: op.valor,
+                  ordem: oIndex
+                }).select().single()
+
+                if (optError) throw optError
+
+                if (optData) {
+                  await supabase.from('product_stock_variations').insert({
+                    produto_id: produtoId,
+                    option_id: optData.id,
+                    estoque: op.estoque
+                  })
+                }
+              }
+            }
+          }
         }
       }
 
@@ -221,10 +270,87 @@ export function ProductForm({ produto }: Props) {
               <input {...register('preco_promocional', { valueAsNumber: true })} type="number" step="0.01" min="0" placeholder="0,00" className="form-input pl-9" />
             </div>
           </div>
-          <div>
-            <label className="form-label">Estoque *</label>
-            <input {...register('estoque', { valueAsNumber: true })} type="number" min="0" placeholder="0" className="form-input" />
-            {errors.estoque && <p className="form-error">{errors.estoque.message}</p>}
+          <div className="sm:col-span-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="form-label mb-0">Controle de Estoque por Tamanho (Sapatos / Roupas)</label>
+              <button type="button" onClick={() => {
+                const current = getValues('variacoes') || []
+                setValue('variacoes', [...current, { nome: 'Tamanho', opcoes: [{ valor: '35', estoque: 0 }] }])
+              }} className="text-xs text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+                <Plus size={14} /> Adicionar Grade de Tamanhos
+              </button>
+            </div>
+            
+            <Controller control={control} name="variacoes" render={({ field }) => {
+              const variacoes = field.value || []
+              if (variacoes.length === 0) {
+                return (
+                  <div className="p-4 bg-muted/30 border border-border rounded-xl text-center">
+                    <p className="text-muted-foreground text-sm mb-2">Nenhuma grade de tamanho cadastrada para este produto.</p>
+                    <button type="button" onClick={() => field.onChange([{ nome: 'Tamanho', opcoes: [{ valor: '35', estoque: 10 }, { valor: '36', estoque: 10 }, { valor: '37', estoque: 10 }] }])}
+                      className="px-4 py-2 bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30 rounded-lg text-xs font-semibold hover:bg-[var(--brand-primary)]/20 transition-all">
+                      + Adicionar Grade Padrão (Ex: 34 ao 44)
+                    </button>
+                  </div>
+                )
+              }
+              return (
+                <div className="space-y-4">
+                  {variacoes.map((v, vIndex) => (
+                    <div key={vIndex} className="p-4 bg-muted/20 border border-border rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <input value={v.nome} onChange={e => {
+                          const updated = [...variacoes]
+                          updated[vIndex].nome = e.target.value
+                          field.onChange(updated)
+                        }} className="form-input max-w-xs text-sm font-bold" placeholder="Nome da Variação (Ex: Tamanho)" />
+                        <button type="button" onClick={() => {
+                          const updated = variacoes.filter((_, i) => i !== vIndex)
+                          field.onChange(updated)
+                        }} className="text-red-400 hover:text-red-500 p-1">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {v.opcoes.map((op, oIndex) => (
+                          <div key={oIndex} className="flex items-center gap-2 bg-card p-2 border border-border rounded-lg">
+                            <input value={op.valor} onChange={e => {
+                              const updated = [...variacoes]
+                              updated[vIndex].opcoes[oIndex].valor = e.target.value
+                              field.onChange(updated)
+                            }} className="w-16 bg-transparent text-sm font-bold text-center border-b border-border focus:outline-none focus:border-[var(--brand-primary)]" placeholder="Tam" />
+                            <div className="flex-1">
+                              <span className="text-[10px] text-muted-foreground block">Qtd</span>
+                              <input type="number" min="0" value={op.estoque} onChange={e => {
+                                const updated = [...variacoes]
+                                updated[vIndex].opcoes[oIndex].estoque = parseInt(e.target.value) || 0
+                                field.onChange(updated)
+                              }} className="w-full bg-transparent text-sm font-bold focus:outline-none text-[var(--brand-primary)]" />
+                            </div>
+                            <button type="button" onClick={() => {
+                              const updated = [...variacoes]
+                              updated[vIndex].opcoes = updated[vIndex].opcoes.filter((_, i) => i !== oIndex)
+                              field.onChange(updated)
+                            }} className="text-muted-foreground hover:text-red-400">
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button type="button" onClick={() => {
+                        const updated = [...variacoes]
+                        updated[vIndex].opcoes.push({ valor: '', estoque: 0 })
+                        field.onChange(updated)
+                      }} className="text-xs text-[var(--brand-primary)] hover:underline flex items-center gap-1 mt-2">
+                        <Plus size={12} /> Adicionar Opção / Tamanho
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )
+            }} />
           </div>
         </div>
 

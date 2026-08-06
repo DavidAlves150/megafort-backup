@@ -7,13 +7,21 @@ export const produtoSchema = z.object({
   preco_compra:      z.number({ invalid_type_error: 'Informe um valor' }).min(0, 'Valor inválido'),
   preco_venda:       z.number({ invalid_type_error: 'Informe um valor' }).min(0.01, 'Preço de venda obrigatório'),
   preco_promocional: z.number().nullable().optional(),
-  estoque:           z.number({ invalid_type_error: 'Informe a quantidade' }).int().min(0),
   sku:               z.string().optional().default(''),
   categoria_id:      z.string().uuid().nullable().optional(),
   marca_id:          z.string().uuid().nullable().optional(),
   em_destaque:       z.boolean().default(false),
   em_promocao:       z.boolean().default(false),
   ativo:             z.boolean().default(true),
+  variacoes:         z.array(z.object({
+    id: z.string().uuid().optional(),
+    nome: z.string().min(1, 'Nome da variação obrigatório'),
+    opcoes: z.array(z.object({
+      id: z.string().uuid().optional(),
+      valor: z.string().min(1, 'Valor da opção obrigatório'),
+      estoque: z.number({ invalid_type_error: 'Informe a quantidade' }).int().min(0, 'Estoque não pode ser negativo'),
+    })).min(1, 'Adicione pelo menos uma opção de variação'),
+  })).optional(),
 })
 
 export const categoriaSchema = z.object({
@@ -51,6 +59,8 @@ export const loginSchema = z.object({
 })
 
 export type ProdutoSchema   = z.infer<typeof produtoSchema>
+export type ProductVariationSchema = z.infer<typeof produtoSchema.shape.variacoes.element>
+export type ProductVariationOptionSchema = z.infer<typeof produtoSchema.shape.variacoes.element.shape.opcoes.element>
 export type CategoriaSchema = z.infer<typeof categoriaSchema>
 export type MarcaSchema     = z.infer<typeof marcaSchema>
 export type BannerSchema    = z.infer<typeof bannerSchema>
