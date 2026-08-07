@@ -172,14 +172,13 @@ export interface ProdutoFormData {
   preco_venda: number
   preco_promocional: number | null
   estoque: number // Será a soma do estoque das variações, se houver
-  variacoes?: ProductVariation[]
   sku: string | null
   categoria_id?: string | null
   marca_id?: string | null
   em_destaque: boolean
   em_promocao: boolean
   ativo: boolean
-  variacoes?: ProductVariationSchema[]
+  variacoes?: ProductVariation[]
 }
 
 export interface ProdutoFiltros {

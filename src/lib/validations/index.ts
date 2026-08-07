@@ -59,8 +59,19 @@ export const loginSchema = z.object({
 })
 
 export type ProdutoSchema   = z.infer<typeof produtoSchema>
-export type ProductVariationSchema = z.infer<typeof produtoSchema.shape.variacoes.element>
-export type ProductVariationOptionSchema = z.infer<typeof produtoSchema.shape.variacoes.element.shape.opcoes.element>
+
+const variationSchema = z.object({
+  id: z.string().uuid().optional(),
+  nome: z.string().min(1, 'Nome da variação obrigatório'),
+  opcoes: z.array(z.object({
+    id: z.string().uuid().optional(),
+    valor: z.string().min(1, 'Valor da opção obrigatório'),
+    estoque: z.number({ invalid_type_error: 'Informe a quantidade' }).int().min(0, 'Estoque não pode ser negativo'),
+  })).min(1, 'Adicione pelo menos uma opção de variação'),
+})
+
+export type ProductVariationSchema = z.infer<typeof variationSchema>
+export type ProductVariationOptionSchema = z.infer<typeof variationSchema.shape.opcoes.element>
 export type CategoriaSchema = z.infer<typeof categoriaSchema>
 export type MarcaSchema     = z.infer<typeof marcaSchema>
 export type BannerSchema    = z.infer<typeof bannerSchema>

@@ -43,7 +43,13 @@ export function ProductForm({ produto }: Props) {
   const wNome    = watch('nome')
   const wCompra  = watch('preco_compra') || 0
   const wVenda   = watch('preco_venda')  || 0
-  const wEstoque = watch('estoque')      || 0
+  const wVariacoes = watch('variacoes') || []
+  
+  // Calcular estoque total das variações
+  const wEstoque = wVariacoes.reduce((total, v) => {
+    return total + (v.opcoes?.reduce((sum, o) => sum + (Number(o.estoque) || 0), 0) || 0)
+  }, 0)
+  
   const lucro    = calcLucroPotencial(wCompra, wVenda, wEstoque)
 
   useEffect(() => {
