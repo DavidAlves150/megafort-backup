@@ -1,173 +1,159 @@
-'use client';
+'use client'
 
-import React, { useState } from 'react';
-import { ShoppingCart, Smartphone, Store } from 'lucide-react';
-import { createClient } from "@/lib/supabase/client";
-
-const supabase = createClient();
+import { useState } from 'react'
+import { ShoppingCart, X, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import toast from 'react-hot-toast'
 
 interface Product {
-  id: string;
-  nome: string;
-  preco: number;
-  preco_compra?: number;
+  id: string
+  nome: string
+  preco_venda: number | string
+  preco_compra?: number | string | null
 }
 
 interface RegisterSaleModalProps {
-  products: Product[];
+  products: Product[]
+  onSaved?: () => void
 }
 
-export default function RegisterSaleModal({ products }: RegisterSaleModalProps) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    produto_id: '',
-    quantidade: 1,
-    valor_venda: 0,
-    valor_custo: 0,
-    canal_venda: 'WhatsApp'
-  });
+const initialForm = {
+  produto_id: '',
+  quantidade: 1,
+  valor_venda: 0,
+  valor_custo: 0,
+  canal_venda: 'WhatsApp',
+  observacoes: '',
+}
 
-  const handleProductChange = (id: string) => {
-    const product = products.find(p => p.id === id);
-    if (product) {
-      setFormData({
-        ...formData,
-        produto_id: id,
-        valor_venda: product.preco || 0,
-        valor_custo: product.preco_compra || 0
-      });
-    }
-  };
+export default function RegisterSaleModal({ products, onSaved }: RegisterSaleModalProps) {
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState(initialForm)
+  const supabase = createClient()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  function close() {
+    if (!loading) setOpen(false)
+  }
+
+  function handleProductChange(id: string) {
+    const product = products.find(p => p.id === id)
+    setFormData(current => ({
+      ...current,
+      produto_id: id,
+      valor_venda: product ? Number(product.preco_venda) || 0 : 0,
+      valor_custo: product ? Number(product.preco_compra) || 0 : 0,
+    }))
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     if (!formData.produto_id) {
-      alert("Selecione um produto");
-      return;
+      toast.error('Selecione um produto.')
+      return
     }
-    
-    setLoading(true);
-    const lucro_real = (formData.valor_venda - formData.valor_custo) * formData.quantidade;
-    
+    if (formData.quantidade < 1 || formData.valor_venda < 0 || formData.valor_custo < 0) {
+      toast.error('Confira quantidade, preço de venda e custo.')
+      return
+    }
+
+    setLoading(true)
     try {
-      const { error } = await supabase.from('vendas').insert([{
+      const { error } = await supabase.from('vendas').insert({
         produto_id: formData.produto_id,
         quantidade: formData.quantidade,
         valor_venda: formData.valor_venda,
         valor_custo: formData.valor_custo,
         canal_venda: formData.canal_venda,
-        lucro_real,
-        data_venda: new Date().toISOString()
-      }]);
+        observacoes: formData.observacoes || null,
+        data_venda: new Date().toISOString(),
+        lucro_real: (formData.valor_venda - formData.valor_custo) * formData.quantidade,
+      })
+      if (error) throw error
 
-      if (error) throw error;
-      
-      alert("Venda registrada com sucesso!");
-      setOpen(false);
-      window.location.reload();
+      toast.success('Venda registrada nos Relatórios de Vendas.')
+      setFormData(initialForm)
+      setOpen(false)
+      onSaved?.()
     } catch (error: any) {
-      alert("Erro ao registrar venda: " + error.message);
+      toast.error(error?.message || 'Não foi possível registrar a venda.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  const fieldClass = 'w-full min-h-11 rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-base text-foreground outline-none transition focus:border-[var(--brand-primary)]'
+  const labelClass = 'mb-1.5 block font-body text-xs font-semibold uppercase tracking-wide text-muted-foreground'
 
   return (
     <>
-      <button 
-        onClick={() => setOpen(true)} 
-        className="bg-[#CCFF00] text-black px-4 py-2 rounded-xl flex items-center gap-2 font-display text-[10px] tracking-widest hover:opacity-90 transition-all shadow-[0_0_15px_rgba(204,255,0,0.3)]"
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-2.5 font-display text-xs tracking-widest text-black transition hover:opacity-90"
       >
-        <ShoppingCart size={14} /> REGISTRAR VENDA
+        <ShoppingCart size={15} /> REGISTRAR VENDA
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#0A0A0A] border border-[#CCFF00]/20 w-full max-w-md rounded-2xl p-6 relative shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-            <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-[#CCFF00] text-xl font-display tracking-widest">NOVA VENDA</h2>
-              <button 
-                onClick={() => setOpen(false)} 
-                className="text-white/50 hover:text-white transition-colors"
-              >
-                ✕
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true">
+          <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-card p-5 shadow-2xl sm:max-w-lg sm:rounded-2xl sm:p-6">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="font-display text-xl tracking-widest text-foreground">NOVA VENDA</h2>
+                <p className="font-body text-sm text-muted-foreground">O registro ficará em Relatórios e Vendas.</p>
+              </div>
+              <button type="button" onClick={close} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition hover:text-foreground" aria-label="Fechar">
+                <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-display text-white/50 uppercase tracking-widest">Produto</label>
-                <select 
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:border-[#CCFF00]/50 transition-all"
-                  onChange={(e) => handleProductChange(e.target.value)}
-                  value={formData.produto_id}
-                >
-                  <option value="" className="bg-[#0A0A0A]">Selecione o produto</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id} className="bg-[#0A0A0A]">{p.nome}</option>
-                  ))}
+              <div>
+                <label className={labelClass}>Produto</label>
+                <select className={fieldClass} onChange={event => handleProductChange(event.target.value)} value={formData.produto_id}>
+                  <option value="">Selecione o produto</option>
+                  {products.map(product => <option key={product.id} value={product.id}>{product.nome}</option>)}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-display text-white/50 uppercase tracking-widest">Quantidade</label>
-                  <input 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:border-[#CCFF00]/50 transition-all"
-                    type="number" 
-                    min="1" 
-                    value={formData.quantidade} 
-                    onChange={e => setFormData({...formData, quantidade: Number(e.target.value)})} 
-                  />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Quantidade</label>
+                  <input className={fieldClass} type="number" min="1" inputMode="numeric" value={formData.quantidade} onChange={event => setFormData({ ...formData, quantidade: Math.max(1, Number(event.target.value) || 1) })} />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-display text-white/50 uppercase tracking-widest">Canal</label>
-                  <select 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:border-[#CCFF00]/50 transition-all"
-                    onChange={(e) => setFormData({...formData, canal_venda: e.target.value})} 
-                    value={formData.canal_venda}
-                  >
-                    <option value="WhatsApp" className="bg-[#0A0A0A]">WhatsApp</option>
-                    <option value="Loja Física" className="bg-[#0A0A0A]">Loja Física</option>
+                <div>
+                  <label className={labelClass}>Canal de venda</label>
+                  <select className={fieldClass} value={formData.canal_venda} onChange={event => setFormData({ ...formData, canal_venda: event.target.value })}>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Loja Física">Loja Física</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Outro">Outro</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-display text-white/50 uppercase tracking-widest">Preço Venda (Un)</label>
-                  <input 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:border-[#CCFF00]/50 transition-all"
-                    type="number" 
-                    step="0.01" 
-                    value={formData.valor_venda} 
-                    onChange={e => setFormData({...formData, valor_venda: Number(e.target.value)})} 
-                  />
+                <div>
+                  <label className={labelClass}>Preço de venda por unidade</label>
+                  <input className={fieldClass} type="number" min="0" step="0.01" inputMode="decimal" value={formData.valor_venda} onChange={event => setFormData({ ...formData, valor_venda: Number(event.target.value) || 0 })} />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-display text-white/50 uppercase tracking-widest">Custo (Un)</label>
-                  <input 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:border-[#CCFF00]/50 transition-all"
-                    type="number" 
-                    step="0.01" 
-                    value={formData.valor_custo} 
-                    onChange={e => setFormData({...formData, valor_custo: Number(e.target.value)})} 
-                  />
+                <div>
+                  <label className={labelClass}>Custo por unidade</label>
+                  <input className={fieldClass} type="number" min="0" step="0.01" inputMode="decimal" value={formData.valor_custo} onChange={event => setFormData({ ...formData, valor_custo: Number(event.target.value) || 0 })} />
                 </div>
               </div>
 
-              <button 
-                type="submit" 
-                className="w-full bg-[#CCFF00] text-black font-display text-xs tracking-widest py-4 rounded-xl mt-4 hover:opacity-90 transition-all disabled:opacity-50"
-                disabled={loading}
-              >
-                {loading ? "PROCESSANDO..." : "CONFIRMAR VENDA"}
+              <div>
+                <label className={labelClass}>Observações</label>
+                <textarea className={`${fieldClass} min-h-20 resize-y`} value={formData.observacoes} onChange={event => setFormData({ ...formData, observacoes: event.target.value })} placeholder="Opcional" />
+              </div>
+
+              <button type="submit" disabled={loading} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-3 font-display text-sm tracking-widest text-black transition hover:opacity-90 disabled:opacity-60">
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <ShoppingCart size={18} />}
+                {loading ? 'SALVANDO...' : 'CONFIRMAR VENDA'}
               </button>
             </form>
           </div>
         </div>
       )}
     </>
-  );
+  )
 }

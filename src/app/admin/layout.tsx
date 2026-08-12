@@ -17,7 +17,7 @@ const NAV = [
   { href: '/admin/categorias',    label: 'Categorias',   icon: Grid3X3 },
   { href: '/admin/marcas',        label: 'Marcas',       icon: Award },
   { href: '/admin/banners',       label: 'Banners',      icon: Image },
-  { href: '/admin/relatorios',    label: 'Relatórios',   icon: BarChart3 },
+  { href: '/admin/relatorios',    label: 'Relatórios e Vendas', icon: BarChart3 },
   { href: '/admin/financeiro',    label: 'Financeiro',   icon: DollarSign },
   { href: '/admin/configuracoes', label: 'Configurações',icon: Settings },
 ]
@@ -85,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <motion.aside
               initial={{ x: -260 }} animate={{ x: 0 }} exit={{ x: -260 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              className="fixed inset-y-0 left-0 z-50 w-60 bg-card border-r border-border lg:hidden">
+              className="fixed inset-y-0 left-0 z-50 w-[min(18rem,88vw)] bg-card border-r border-border lg:hidden">
               <Sidebar onClick={() => setOpen(false)} />
             </motion.aside>
           </>
@@ -93,10 +93,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </AnimatePresence>
 
       {/* Main */}
-      <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
+      <div className="flex min-w-0 flex-1 flex-col min-h-screen lg:ml-60">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 bg-card/80 backdrop-blur border-b border-border h-13 flex items-center justify-between px-4">
-          <button onClick={() => setOpen(true)} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between border-b border-border bg-card/95 px-3 backdrop-blur sm:px-4">
+          <button onClick={() => setOpen(true)} className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground lg:hidden" aria-label="Abrir menu">
             <Menu size={16} />
           </button>
           <div className="hidden lg:flex items-center gap-2 text-sm font-body text-muted-foreground">
@@ -106,12 +106,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <div className="lg:hidden font-display text-foreground text-base tracking-widest">ADMIN</div>
           <Link href="/" target="_blank"
-            className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors">
+            className="rounded-lg px-2 py-2 font-body text-xs text-muted-foreground transition-colors hover:text-foreground">
             Ver loja ↗
           </Link>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 relative overflow-hidden">
+        <main className="relative flex-1 overflow-x-clip p-3 sm:p-4 md:p-6">
           <div className="fixed inset-0 pointer-events-none z-0">
             
           </div>

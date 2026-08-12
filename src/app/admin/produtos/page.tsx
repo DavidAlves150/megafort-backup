@@ -1,11 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Plus, Search, Edit, Trash2, Copy, Star, Zap, MoreVertical, Package, Filter, Eye } from 'lucide-react'
+import { Copy, Edit, Eye, MoreVertical, Package, Plus, Search, Star, Trash2, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Produto } from '@/types'
-import { formatCurrency, getEstoqueStatus, cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import { StockBadge } from '@/components/products/StockBadge'
 import toast from 'react-hot-toast'
 
@@ -13,122 +14,100 @@ export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
-  const [menu, setMenu] = useState<string|null>(null)
+  const [menu, setMenu] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
-    const t = setTimeout(load, 260)
-    return () => clearTimeout(t)
+    const timeout = setTimeout(load, 260)
+    return () => clearTimeout(timeout)
   }, [busca])
 
   async function load() {
     setLoading(true)
-    let q = supabase.from('produtos')
+    let query = supabase.from('produtos')
       .select('*, categoria:categorias(nome), marca:marcas(nome), imagens:product_images(url,is_principal)')
       .order('criado_em', { ascending: false })
-    if (busca) q = q.ilike('nome', `%${busca}%`)
-    const { data } = await q.limit(100)
+    if (busca) query = query.ilike('nome', `%${busca}%`)
+    const { data, error } = await query.limit(100)
+    if (error) toast.error(error.message)
     setProdutos((data || []) as any)
     setLoading(false)
   }
 
-  async function toggleField(id: string, field: string, val: boolean) {
-    await supabase.from('produtos').update({ [field]: !val }).eq('id', id)
-    load(); toast.success('Atualizado!')
+  async function toggleField(id: string, field: string, value: boolean) {
+    const { error } = await supabase.from('produtos').update({ [field]: !value }).eq('id', id)
+    if (error) return toast.error(error.message)
+    await load()
+    toast.success('Produto atualizado.')
   }
 
-  async function duplicar(p: Produto) {
-    const { id, criado_em, atualizado_em, slug, visualizacoes, ...rest } = p as any
-    await supabase.from('produtos').insert([{ ...rest, nome: p.nome + ' (Cópia)', slug: p.slug + '-copia-' + Date.now() }])
-    toast.success('Duplicado!'); load()
+  async function duplicar(product: Produto) {
+    const { id, criado_em, atualizado_em, slug, visualizacoes, ...rest } = product as any
+    const { error } = await supabase.from('produtos').insert([{ ...rest, nome: `${product.nome} (Cópia)`, slug: `${product.slug}-copia-${Date.now()}` }])
+    if (error) return toast.error(error.message)
+    toast.success('Produto duplicado.')
+    await load()
   }
 
-  async function excluir(p: Produto) {
-    if (!confirm(`Excluir "${p.nome}"?`)) return
-    await supabase.from('produtos').delete().eq('id', p.id)
-    toast.success('Excluído!'); load()
+  async function excluir(product: Produto) {
+    if (!confirm(`Excluir “${product.nome}”?`)) return
+    const { error } = await supabase.from('produtos').delete().eq('id', product.id)
+    if (error) return toast.error(error.message)
+    toast.success('Produto excluído.')
+    await load()
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between">
         <div>
-          <h1 className="font-display text-foreground text-2xl md:text-3xl tracking-widest">PRODUTOS</h1>
-          <p className="font-body text-muted-foreground text-sm">{produtos.length} produto(s)</p>
+          <h1 className="font-display text-2xl tracking-widest text-foreground md:text-3xl">PRODUTOS</h1>
+          <p className="font-body text-sm text-muted-foreground">{produtos.length} produto(s)</p>
         </div>
-        <Link href="/admin/produtos/novo"
-          className="flex items-center gap-2 px-4 py-2.5 bg-[var(--brand-button)] text-black font-display text-sm tracking-widest rounded-xl hover:opacity-90 transition-all">
-          <Plus size={15}/> NOVO
+        <Link href="/admin/produtos/novo" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-2.5 font-display text-sm tracking-widest text-black transition hover:opacity-90">
+          <Plus size={17} /> NOVO PRODUTO
         </Link>
       </div>
 
       <div className="relative">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"/>
-        <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar produto..." className="form-input pl-10 h-11"/>
+        <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input value={busca} onChange={event => setBusca(event.target.value)} placeholder="Buscar produto..." className="form-input h-12 pl-10" />
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="overflow-visible rounded-2xl border border-border bg-card">
         {loading ? (
-          <div className="divide-y divide-border">
-            {[...Array(5)].map((_,i) => (
-              <div key={i} className="p-4 flex items-center gap-3">
-                <div className="skeleton w-11 h-11 rounded-xl"/>
-                <div className="flex-1 space-y-2"><div className="skeleton h-4 w-2/3 rounded"/><div className="skeleton h-3 w-1/3 rounded"/></div>
-              </div>
-            ))}
-          </div>
+          <div className="divide-y divide-border">{[...Array(5)].map((_, index) => <div key={index} className="flex items-center gap-3 p-4"><div className="skeleton h-12 w-12 shrink-0 rounded-xl" /><div className="flex-1 space-y-2"><div className="skeleton h-4 w-2/3 rounded" /><div className="skeleton h-3 w-1/3 rounded" /></div></div>)}</div>
         ) : produtos.length === 0 ? (
-          <div className="py-16 text-center">
-            <Package size={40} className="text-muted-foreground/30 mx-auto mb-3"/>
-            <p className="font-body text-muted-foreground">Nenhum produto. <Link href="/admin/produtos/novo" className="text-[var(--brand-primary)] hover:underline">Cadastrar agora</Link></p>
-          </div>
+          <div className="py-16 text-center"><Package size={40} className="mx-auto mb-3 text-muted-foreground/30" /><p className="font-body text-muted-foreground">Nenhum produto. <Link href="/admin/produtos/novo" className="text-[var(--brand-primary)] hover:underline">Cadastrar agora</Link></p></div>
         ) : (
           <div className="divide-y divide-border">
-            {produtos.map((p, i) => {
-              const img = (p as any).imagens?.find((x:any)=>x.is_principal)?.url || (p as any).imagens?.[0]?.url
+            {produtos.map((product, index) => {
+              const image = (product as any).imagens?.find((item: any) => item.is_principal)?.url || (product as any).imagens?.[0]?.url
+              const isMenuOpen = menu === product.id
               return (
-                <motion.div key={p.id} initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay: i*0.02 }}
-                  className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
-                  <div className="w-11 h-11 rounded-xl bg-muted border border-border flex-shrink-0 overflow-hidden">
-                    {img ? <img src={img} className="w-full h-full object-cover"/> : <Package size={16} className="m-auto text-muted-foreground"/>}
+                <motion.article key={product.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-3 p-4 transition-colors hover:bg-muted/20 sm:grid-cols-[3.25rem_minmax(0,1fr)_auto] sm:items-center">
+                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted">
+                    {image ? <img src={image} alt={product.nome} className="h-full w-full object-cover" /> : <Package size={18} className="text-muted-foreground" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <Link href={`/admin/produtos/${p.id}`} className="font-body font-semibold text-foreground text-sm hover:text-[var(--brand-primary)] transition-colors truncate max-w-[160px] sm:max-w-none">{p.nome}</Link>
-                      {!p.ativo && <span className="px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-body rounded">INATIVO</span>}
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Link href={`/admin/produtos/${product.id}`} className="min-w-0 break-words font-body text-sm font-semibold text-foreground transition hover:text-[var(--brand-primary)]">{product.nome}</Link>
+                      {!product.ativo && <span className="rounded border border-red-400/30 bg-red-400/10 px-1.5 py-0.5 font-body text-[10px] text-red-400">INATIVO</span>}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="font-body text-[var(--brand-primary)] text-xs font-semibold">{formatCurrency(p.preco_venda)}</span>
-                      <StockBadge estoque={p.estoque} size="sm"/>
-                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2"><span className="font-body text-sm font-semibold text-[var(--brand-primary)]">{formatCurrency(product.preco_venda)}</span><StockBadge estoque={product.estoque} size="sm" /><span className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:flex"><Eye size={11} />{product.visualizacoes}</span></div>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className="hidden sm:flex items-center gap-1 font-mono text-muted-foreground text-xs"><Eye size={10}/>{p.visualizacoes}</span>
-                    <button onClick={()=>toggleField(p.id,'em_destaque',p.em_destaque)}
-                      className={cn('w-7 h-7 rounded-lg flex items-center justify-center transition-all', p.em_destaque?'bg-yellow-400/15 text-yellow-400':'bg-muted text-muted-foreground hover:text-yellow-400')}>
-                      <Star size={12}/>
-                    </button>
-                    <button onClick={()=>toggleField(p.id,'em_promocao',p.em_promocao)}
-                      className={cn('w-7 h-7 rounded-lg flex items-center justify-center transition-all', p.em_promocao?'bg-red-400/15 text-red-400':'bg-muted text-muted-foreground hover:text-red-400')}>
-                      <Zap size={12}/>
-                    </button>
-                    <Link href={`/admin/produtos/${p.id}`} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-[var(--brand-primary)] transition-colors">
-                      <Edit size={12}/>
-                    </Link>
+
+                  <div className="col-span-2 grid grid-cols-4 gap-2 border-t border-border/70 pt-3 sm:col-span-1 sm:flex sm:border-0 sm:pt-0">
+                    <button type="button" onClick={() => toggleField(product.id, 'em_destaque', product.em_destaque)} className={cn('flex h-11 items-center justify-center rounded-xl transition-all sm:w-11', product.em_destaque ? 'bg-yellow-400/15 text-yellow-400' : 'bg-muted text-muted-foreground hover:text-yellow-400')} aria-label="Alternar destaque"><Star size={16} /></button>
+                    <button type="button" onClick={() => toggleField(product.id, 'em_promocao', product.em_promocao)} className={cn('flex h-11 items-center justify-center rounded-xl transition-all sm:w-11', product.em_promocao ? 'bg-red-400/15 text-red-400' : 'bg-muted text-muted-foreground hover:text-red-400')} aria-label="Alternar promoção"><Zap size={16} /></button>
+                    <Link href={`/admin/produtos/${product.id}`} className="flex h-11 items-center justify-center rounded-xl bg-muted text-muted-foreground transition hover:text-[var(--brand-primary)]" aria-label={`Editar ${product.nome}`}><Edit size={16} /></Link>
                     <div className="relative">
-                      <button onClick={()=>setMenu(menu===p.id?null:p.id)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                        <MoreVertical size={12}/>
-                      </button>
-                      {menu===p.id && (
-                        <div className="absolute right-0 top-9 z-20 bg-card border border-border rounded-xl shadow-card py-1 min-w-[130px]" onMouseLeave={()=>setMenu(null)}>
-                          <button onClick={()=>{toggleField(p.id,'ativo',p.ativo);setMenu(null)}} className="w-full px-4 py-2 text-left font-body text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">{p.ativo?'Desativar':'Ativar'}</button>
-                          <button onClick={()=>{duplicar(p);setMenu(null)}} className="w-full px-4 py-2 text-left font-body text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2"><Copy size={11}/>Duplicar</button>
-                          <button onClick={()=>{excluir(p);setMenu(null)}} className="w-full px-4 py-2 text-left font-body text-sm text-red-400 hover:bg-red-400/5 transition-colors flex items-center gap-2"><Trash2 size={11}/>Excluir</button>
-                        </div>
-                      )}
+                      <button type="button" onClick={() => setMenu(isMenuOpen ? null : product.id)} className="flex h-11 w-full items-center justify-center rounded-xl bg-muted text-muted-foreground transition hover:text-foreground sm:w-11" aria-label="Mais ações"><MoreVertical size={17} /></button>
+                      {isMenuOpen && <div className="absolute right-0 top-12 z-30 min-w-44 rounded-xl border border-border bg-card py-1 shadow-xl"><button type="button" onClick={() => { toggleField(product.id, 'ativo', product.ativo); setMenu(null) }} className="min-h-11 w-full px-4 text-left font-body text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground">{product.ativo ? 'Desativar' : 'Ativar'}</button><button type="button" onClick={() => { duplicar(product); setMenu(null) }} className="flex min-h-11 w-full items-center gap-2 px-4 text-left font-body text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"><Copy size={14} />Duplicar</button><button type="button" onClick={() => { excluir(product); setMenu(null) }} className="flex min-h-11 w-full items-center gap-2 px-4 text-left font-body text-sm text-red-400 transition hover:bg-red-400/5"><Trash2 size={14} />Excluir</button></div>}
                     </div>
                   </div>
-                </motion.div>
+                </motion.article>
               )
             })}
           </div>

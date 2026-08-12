@@ -19,10 +19,9 @@
    - Password: senha forte
    → **Create user**
 
-4. **Settings → API** → copie:
+4. **Settings → API** → copie apenas:
    - `Project URL`
    - `anon/public` key
-   - `service_role` key (clique em Reveal)
 
 ---
 
@@ -36,7 +35,6 @@ Edite `.env.local` com os dados do Supabase:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
 NEXT_PUBLIC_WHATSAPP=5598885916645
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
@@ -76,7 +74,6 @@ git push -u origin main
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxx.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` |
 | `NEXT_PUBLIC_WHATSAPP` | `5598885916645` |
 | `NEXT_PUBLIC_SITE_URL` | `https://SEU-SITE.netlify.app` |
 | `NODE_VERSION` | `20` |

@@ -1,4 +1,16 @@
-node_modules
+# Dependências e artefatos de build
+node_modules/
+.next/
+out/
+build/
 
-# Local Netlify folder
-.netlify
+# Arquivos gerados pelo Next.js
+next-env.d.ts
+
+# Arquivos locais e logs
+.netlify/
+.env
+.env.local
+.env*.local
+*.log
+.DS_Store
