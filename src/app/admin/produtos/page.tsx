@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { Copy, Edit, Eye, MoreVertical, Package, Plus, Search, Star, Trash2, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Produto } from '@/types'
@@ -10,51 +9,68 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { StockBadge } from '@/components/products/StockBadge'
 import toast from 'react-hot-toast'
 
+const ADMIN_PRODUCT_SELECT = 'id,nome,slug,preco_venda,estoque,ativo,em_destaque,em_promocao,visualizacoes,criado_em,categoria:categorias(nome),marca:marcas(nome),imagens:product_images(url,is_principal)'
+
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
   const [menu, setMenu] = useState<string | null>(null)
-  const supabase = createClient()
+  const requestId = useRef(0)
+  const supabase = useMemo(() => createClient(), [])
+
+  const load = useCallback(async () => {
+    const currentRequest = ++requestId.current
+    setLoading(true)
+
+    let query = supabase.from('produtos').select(ADMIN_PRODUCT_SELECT).order('criado_em', { ascending: false })
+    if (busca.trim()) query = query.ilike('nome', `%${busca.trim()}%`)
+
+    const { data, error } = await query.limit(60)
+    if (currentRequest !== requestId.current) return
+    if (error) toast.error(error.message)
+    setProdutos((data || []) as unknown as Produto[])
+    setLoading(false)
+  }, [busca, supabase])
 
   useEffect(() => {
-    const timeout = setTimeout(load, 260)
-    return () => clearTimeout(timeout)
-  }, [busca])
+    const wait = busca ? 220 : 0
+    const timeout = window.setTimeout(load, wait)
+    return () => window.clearTimeout(timeout)
+  }, [busca, load])
 
-  async function load() {
-    setLoading(true)
-    let query = supabase.from('produtos')
-      .select('*, categoria:categorias(nome), marca:marcas(nome), imagens:product_images(url,is_principal)')
-      .order('criado_em', { ascending: false })
-    if (busca) query = query.ilike('nome', `%${busca}%`)
-    const { data, error } = await query.limit(100)
-    if (error) toast.error(error.message)
-    setProdutos((data || []) as any)
-    setLoading(false)
-  }
-
-  async function toggleField(id: string, field: string, value: boolean) {
-    const { error } = await supabase.from('produtos').update({ [field]: !value }).eq('id', id)
+  async function toggleField(id: string, field: 'em_destaque' | 'em_promocao' | 'ativo', value: boolean) {
+    const nextValue = !value
+    const { error } = await supabase.from('produtos').update({ [field]: nextValue }).eq('id', id)
     if (error) return toast.error(error.message)
-    await load()
+
+    setProdutos(current => current.map(product => product.id === id ? { ...product, [field]: nextValue } : product))
     toast.success('Produto atualizado.')
   }
 
   async function duplicar(product: Produto) {
-    const { id, criado_em, atualizado_em, slug, visualizacoes, ...rest } = product as any
-    const { error } = await supabase.from('produtos').insert([{ ...rest, nome: `${product.nome} (Cópia)`, slug: `${product.slug}-copia-${Date.now()}` }])
+    const { data: original, error: readError } = await supabase.from('produtos').select('*').eq('id', product.id).single()
+    if (readError || !original) return toast.error(readError?.message || 'Produto não encontrado.')
+
+    const { id, criado_em, atualizado_em, slug, visualizacoes, ...rest } = original
+    const { data: copy, error } = await supabase
+      .from('produtos')
+      .insert([{ ...rest, nome: `${product.nome} (Cópia)`, slug: `${product.slug}-copia-${Date.now()}` }])
+      .select(ADMIN_PRODUCT_SELECT)
+      .single()
+
     if (error) return toast.error(error.message)
+    if (copy) setProdutos(current => [copy as unknown as Produto, ...current])
     toast.success('Produto duplicado.')
-    await load()
   }
 
   async function excluir(product: Produto) {
     if (!confirm(`Excluir “${product.nome}”?`)) return
     const { error } = await supabase.from('produtos').delete().eq('id', product.id)
     if (error) return toast.error(error.message)
+
+    setProdutos(current => current.filter(item => item.id !== product.id))
     toast.success('Produto excluído.')
-    await load()
   }
 
   return (
@@ -81,13 +97,13 @@ export default function ProdutosPage() {
           <div className="py-16 text-center"><Package size={40} className="mx-auto mb-3 text-muted-foreground/30" /><p className="font-body text-muted-foreground">Nenhum produto. <Link href="/admin/produtos/novo" className="text-[var(--brand-primary)] hover:underline">Cadastrar agora</Link></p></div>
         ) : (
           <div className="divide-y divide-border">
-            {produtos.map((product, index) => {
+            {produtos.map(product => {
               const image = (product as any).imagens?.find((item: any) => item.is_principal)?.url || (product as any).imagens?.[0]?.url
               const isMenuOpen = menu === product.id
               return (
-                <motion.article key={product.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-3 p-4 transition-colors hover:bg-muted/20 sm:grid-cols-[3.25rem_minmax(0,1fr)_auto] sm:items-center">
+                <article key={product.id} className="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-3 p-4 transition-colors hover:bg-muted/20 sm:grid-cols-[3.25rem_minmax(0,1fr)_auto] sm:items-center">
                   <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted">
-                    {image ? <img src={image} alt={product.nome} className="h-full w-full object-cover" /> : <Package size={18} className="text-muted-foreground" />}
+                    {image ? <img src={image} alt={product.nome} className="h-full w-full object-cover" loading="lazy" /> : <Package size={18} className="text-muted-foreground" />}
                   </div>
 
                   <div className="min-w-0">
@@ -107,7 +123,7 @@ export default function ProdutosPage() {
                       {isMenuOpen && <div className="absolute right-0 top-12 z-30 min-w-44 rounded-xl border border-border bg-card py-1 shadow-xl"><button type="button" onClick={() => { toggleField(product.id, 'ativo', product.ativo); setMenu(null) }} className="min-h-11 w-full px-4 text-left font-body text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground">{product.ativo ? 'Desativar' : 'Ativar'}</button><button type="button" onClick={() => { duplicar(product); setMenu(null) }} className="flex min-h-11 w-full items-center gap-2 px-4 text-left font-body text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"><Copy size={14} />Duplicar</button><button type="button" onClick={() => { excluir(product); setMenu(null) }} className="flex min-h-11 w-full items-center gap-2 px-4 text-left font-body text-sm text-red-400 transition hover:bg-red-400/5"><Trash2 size={14} />Excluir</button></div>}
                     </div>
                   </div>
-                </motion.article>
+                </article>
               )
             })}
           </div>

@@ -184,9 +184,9 @@ export default function CategoriasPage() {
                 {cats.map((category, index) => (
                   <motion.div key={category.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.03 }}
                     className="flex min-w-0 items-center gap-3 p-4 transition-colors hover:bg-muted/30">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl" style={{ background: `${category.cor}18` }}>
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border shadow-sm" style={{ background: `${category.cor}18` }}>
                       {category.imagem_url
-                        ? <img src={category.imagem_url} alt={category.nome} className="h-full w-full object-cover" />
+                        ? <img src={category.imagem_url} alt={category.nome} className="h-full w-full object-cover" loading="lazy" />
                         : <ImageOff size={18} className="text-muted-foreground" />}
                     </div>
                     <div className="min-w-0 flex-1">

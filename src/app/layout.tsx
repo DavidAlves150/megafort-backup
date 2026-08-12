@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { ThemeProvider } from 'next-themes'
 import './globals.css'
 import { Providers } from '@/components/Providers'
-import { createClient } from '@/lib/supabase/server'
+import { getBrandColors } from '@/lib/storefront'
 
 export const metadata: Metadata = {
   title: {
@@ -47,23 +47,8 @@ export const viewport: Viewport = {
   ],
 }
 
-async function getDynamicColors() {
-  try {
-    const supabase = await createClient()
-    const { data } = await supabase
-      .from('configuracoes')
-      .select('chave,valor')
-      .in('chave', ['cor_primaria', 'cor_secundaria', 'cor_botao'])
-    const map: Record<string, string> = {}
-    data?.forEach(c => { if (c.valor) map[c.chave] = c.valor })
-    return map
-  } catch {
-    return {}
-  }
-}
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const colors = await getDynamicColors()
+  const colors = await getBrandColors()
 
   const brandStyles = `
     :root {

@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { Package, TrendingUp, AlertTriangle, DollarSign, ShoppingBag, Tag, Award, Eye, MousePointerClick, Plus, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
@@ -16,211 +15,141 @@ interface Stats {
 
 interface TopProd { id: string; nome: string; visualizacoes: number; cliques?: number }
 
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
-};
-
 export default function DashboardPage() {
-  const [stats,   setStats]   = useState<Stats | null>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
   const [recents, setRecents] = useState<any[]>([])
-  const [topV,    setTopV]    = useState<TopProd[]>([])
-  const [topC,    setTopC]    = useState<TopProd[]>([])
+  const [topV, setTopV] = useState<TopProd[]>([])
+  const [topC, setTopC] = useState<TopProd[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  useEffect(() => { load() }, [])
-
-  async function load() {
+  const load = useCallback(async () => {
     try {
+      setLoading(true)
+      const weekStart = new Date(Date.now() - 7 * 86400000).toISOString()
+      const today = new Date().toISOString().slice(0, 10)
       const [
-        { data: prods },
-        { data: cats  },
-        { data: mrcs  },
-        { data: clks  },
-        { data: rec   },
+        { data: products },
+        { count: categoryCount },
+        { count: brandCount },
+        { data: clicks },
+        { data: recentProducts },
         { data: topViews },
+        { data: topClicks },
       ] = await Promise.all([
         supabase.from('produtos').select('preco_compra,preco_venda,estoque,ativo,em_promocao,em_destaque'),
         supabase.from('categorias').select('id', { count: 'exact', head: true }),
         supabase.from('marcas').select('id', { count: 'exact', head: true }),
-        supabase.from('click_tracking').select('criado_em').gte('criado_em', new Date(Date.now() - 7 * 86400000).toISOString()),
-        supabase.from('produtos').select('id,nome,preco_venda,estoque,imagens:product_images(url)').eq('ativo', true).order('criado_em', { ascending: false }).limit(5),
+        supabase.from('click_tracking').select('criado_em').gte('criado_em', weekStart),
+        supabase.from('produtos').select('id,nome,preco_venda,estoque,imagens:product_images(url,is_principal,ordem)').eq('ativo', true).order('criado_em', { ascending: false }).limit(5),
         supabase.from('produtos').select('id,nome,visualizacoes').eq('ativo', true).order('visualizacoes', { ascending: false }).limit(5),
+        supabase.from('click_tracking').select('produto_id, produtos(id,nome)').eq('tipo', 'whatsapp').gte('criado_em', weekStart).not('produto_id', 'is', null),
       ])
 
-      const hoje = new Date().toISOString().slice(0, 10)
-      const s: Stats = {
-        total:        prods?.length || 0,
-        ativos:       prods?.filter(p => p.ativo).length || 0,
-        esgotados:    prods?.filter(p => p.estoque <= 0).length || 0,
-        baixoEstoque: prods?.filter(p => p.estoque > 0 && p.estoque <= 5).length || 0,
-        promocao:     prods?.filter(p => p.em_promocao).length || 0,
-        destaque:     prods?.filter(p => p.em_destaque).length || 0,
-        categorias:   (cats as any)?.length || 0,
-        marcas:       (mrcs as any)?.length || 0,
-        valorEstoque: prods?.reduce((a, p) => a + (p.preco_compra * p.estoque), 0) || 0,
-        lucroTotal:   prods?.reduce((a, p) => a + ((p.preco_venda - p.preco_compra) * p.estoque), 0) || 0,
-        clicksHoje:   clks?.filter(c => c.criado_em.slice(0, 10) === hoje).length || 0,
-        clicksSemana: clks?.length || 0,
-      }
-      setStats(s)
-      setRecents(rec || [])
-      setTopV(topViews?.map(p => ({ id: p.id, nome: p.nome, visualizacoes: p.visualizacoes })) || [])
-
-      // Top clicados
-      const { data: topClk } = await supabase
-        .from('click_tracking')
-        .select('produto_id, produtos(id,nome)')
-        .eq('tipo', 'whatsapp')
-        .not('produto_id', 'is', null)
-      const cMap: Record<string, { nome: string; count: number }> = {}
-      topClk?.forEach((c: any) => {
-        if (!c.produto_id) return
-        cMap[c.produto_id] = cMap[c.produto_id] || { nome: c.produtos?.nome || '?', count: 0 }
-        cMap[c.produto_id].count++
+      const productsList = products || []
+      setStats({
+        total: productsList.length,
+        ativos: productsList.filter(product => product.ativo).length,
+        esgotados: productsList.filter(product => product.estoque <= 0).length,
+        baixoEstoque: productsList.filter(product => product.estoque > 0 && product.estoque <= 5).length,
+        promocao: productsList.filter(product => product.em_promocao).length,
+        destaque: productsList.filter(product => product.em_destaque).length,
+        categorias: categoryCount || 0,
+        marcas: brandCount || 0,
+        valorEstoque: productsList.reduce((total, product) => total + (product.preco_compra * product.estoque), 0),
+        lucroTotal: productsList.reduce((total, product) => total + ((product.preco_venda - product.preco_compra) * product.estoque), 0),
+        clicksHoje: clicks?.filter(click => click.criado_em.slice(0, 10) === today).length || 0,
+        clicksSemana: clicks?.length || 0,
       })
-      const sorted = Object.entries(cMap).sort((a, b) => b[1].count - a[1].count).slice(0, 5)
-      setTopC(sorted.map(([id, v]) => ({ id, nome: v.nome, visualizacoes: v.count, cliques: v.count })))
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }
+      setRecents(recentProducts || [])
+      setTopV(topViews?.map(product => ({ id: product.id, nome: product.nome, visualizacoes: product.visualizacoes })) || [])
+
+      const clickMap: Record<string, { nome: string; count: number }> = {}
+      topClicks?.forEach((click: any) => {
+        if (!click.produto_id) return
+        clickMap[click.produto_id] = clickMap[click.produto_id] || { nome: click.produtos?.nome || '?', count: 0 }
+        clickMap[click.produto_id].count += 1
+      })
+      setTopC(Object.entries(clickMap).sort(([, first], [, second]) => second.count - first.count).slice(0, 5).map(([id, value]) => ({ id, nome: value.nome, visualizacoes: value.count, cliques: value.count })))
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
+  useEffect(() => { load() }, [load])
 
   const cards = stats ? [
-    { label: 'Total Produtos',   value: stats.total,          icon: Package,         color: 'text-blue-400',   bg: 'bg-blue-400/10',    href: '/admin/produtos' },
-    { label: 'Produtos Ativos',  value: stats.ativos,         icon: ShoppingBag,     color: 'text-green-400',  bg: 'bg-green-400/10',   href: '/admin/produtos' },
-    { label: 'Esgotados',        value: stats.esgotados,      icon: AlertTriangle,   color: 'text-red-400',    bg: 'bg-red-400/10',     href: '/admin/estoque' },
-    { label: 'Estoque Baixo',    value: stats.baixoEstoque,   icon: AlertTriangle,   color: 'text-orange-400', bg: 'bg-orange-400/10',  href: '/admin/estoque' },
-    { label: 'Categorias',       value: stats.categorias,     icon: Tag,             color: 'text-purple-400', bg: 'bg-purple-400/10',  href: '/admin/categorias' },
-    { label: 'Marcas',           value: stats.marcas,         icon: Award,           color: 'text-yellow-400', bg: 'bg-yellow-400/10',  href: '/admin/marcas' },
+    { label: 'Total Produtos', value: stats.total, icon: Package, color: 'text-blue-400', bg: 'bg-blue-400/10', href: '/admin/produtos' },
+    { label: 'Produtos Ativos', value: stats.ativos, icon: ShoppingBag, color: 'text-green-400', bg: 'bg-green-400/10', href: '/admin/produtos' },
+    { label: 'Esgotados', value: stats.esgotados, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-400/10', href: '/admin/estoque' },
+    { label: 'Estoque Baixo', value: stats.baixoEstoque, icon: AlertTriangle, color: 'text-orange-400', bg: 'bg-orange-400/10', href: '/admin/estoque' },
+    { label: 'Categorias', value: stats.categorias, icon: Tag, color: 'text-purple-400', bg: 'bg-purple-400/10', href: '/admin/categorias' },
+    { label: 'Marcas', value: stats.marcas, icon: Award, color: 'text-yellow-400', bg: 'bg-yellow-400/10', href: '/admin/marcas' },
     { label: 'Valor em Estoque', value: formatCurrency(stats.valorEstoque), icon: DollarSign, color: 'text-cyan-400', bg: 'bg-cyan-400/10', href: '/admin/estoque' },
-    { label: 'Lucro Potencial',  value: formatCurrency(stats.lucroTotal),   icon: TrendingUp, color: 'text-[var(--brand-primary)]', bg: 'bg-[var(--brand-primary)]/10', href: '/admin/relatorios' },
-    { label: 'Cliques Hoje',     value: stats.clicksHoje,     icon: MousePointerClick, color: 'text-pink-400',  bg: 'bg-pink-400/10',  href: '/admin/relatorios' },
-    { label: 'Cliques 7 dias',   value: stats.clicksSemana,   icon: MousePointerClick, color: 'text-indigo-400',bg: 'bg-indigo-400/10',href: '/admin/relatorios' },
+    { label: 'Lucro Potencial', value: formatCurrency(stats.lucroTotal), icon: TrendingUp, color: 'text-[var(--brand-primary)]', bg: 'bg-[var(--brand-primary)]/10', href: '/admin/relatorios' },
+    { label: 'Cliques Hoje', value: stats.clicksHoje, icon: MousePointerClick, color: 'text-pink-400', bg: 'bg-pink-400/10', href: '/admin/relatorios' },
+    { label: 'Cliques 7 dias', value: stats.clicksSemana, icon: MousePointerClick, color: 'text-indigo-400', bg: 'bg-indigo-400/10', href: '/admin/relatorios' },
   ] : []
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-foreground text-2xl md:text-3xl tracking-widest">DASHBOARD</h1>
-          <p className="font-body text-muted-foreground text-sm mt-0.5">Visão geral da MegaFort</p>
+          <h1 className="font-display text-2xl tracking-widest text-foreground md:text-3xl">DASHBOARD</h1>
+          <p className="mt-0.5 font-body text-sm text-muted-foreground">Visão geral da MegaFort</p>
         </div>
-        <Link href="/admin/produtos/novo"
-          className="flex items-center gap-2 px-4 py-2.5 bg-[var(--brand-button)] text-black font-display text-sm tracking-widest rounded-xl hover:opacity-90 transition-all">
+        <Link href="/admin/produtos/novo" className="flex items-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-2.5 font-display text-sm tracking-widest text-black transition hover:opacity-90">
           <Plus size={15} /> PRODUTO
         </Link>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40">
-          <Loader2 size={28} className="text-[var(--brand-primary)] animate-spin" />
-        </div>
+        <div className="flex h-40 items-center justify-center"><Loader2 size={28} className="animate-spin text-[var(--brand-primary)]" /></div>
       ) : (
         <>
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {cards.map((card, i) => (
-              <motion.div key={card.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                <Link href={card.href}
-                  className="block p-4 bg-card border border-border rounded-2xl hover:border-[var(--brand-primary)]/20 transition-all group">
-                  <div className={`w-9 h-9 rounded-xl ${card.bg} flex items-center justify-center mb-2`}>
-                    <card.icon size={16} className={card.color} />
-                  </div>
-                  <div className={`font-display text-2xl leading-none ${card.color}`}>{card.value}</div>
-                  <div className="font-body text-muted-foreground text-xs tracking-wide mt-1">{card.label}</div>
-                </Link>
-              </motion.div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {cards.map(card => (
+              <Link key={card.label} href={card.href} className="group block rounded-2xl border border-border bg-card p-4 transition-colors hover:border-[var(--brand-primary)]/20">
+                <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${card.bg}`}><card.icon size={16} className={card.color} /></div>
+                <div className={`font-display text-2xl leading-none ${card.color}`}>{card.value}</div>
+                <div className="mt-1 font-body text-xs tracking-wide text-muted-foreground">{card.label}</div>
+              </Link>
             ))}
           </div>
 
-          {/* Alerts */}
           {stats && (stats.esgotados > 0 || stats.baixoEstoque > 0) && (
-            <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-start gap-3">
-              <AlertTriangle size={18} className="text-orange-400 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-orange-400" />
               <div>
-                <p className="font-body text-foreground text-sm font-semibold">Atenção no estoque!</p>
-                <p className="font-body text-muted-foreground text-xs mt-0.5">
-                  {stats.esgotados > 0 && `${stats.esgotados} produto(s) esgotado(s). `}
-                  {stats.baixoEstoque > 0 && `${stats.baixoEstoque} produto(s) com estoque baixo.`}
-                  {' '}<Link href="/admin/estoque" className="text-orange-400 hover:underline">Ver estoque →</Link>
-                </p>
+                <p className="font-body text-sm font-semibold text-foreground">Atenção no estoque!</p>
+                <p className="mt-0.5 font-body text-xs text-muted-foreground">{stats.esgotados > 0 && `${stats.esgotados} produto(s) esgotado(s). `}{stats.baixoEstoque > 0 && `${stats.baixoEstoque} produto(s) com estoque baixo.`} <Link href="/admin/estoque" className="text-orange-400 hover:underline">Ver estoque →</Link></p>
               </div>
             </div>
           )}
 
-          {/* Tables row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Recent */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <h2 className="font-display text-foreground text-base tracking-widest">RECENTES</h2>
-                <Link href="/admin/produtos" className="font-body text-xs text-[var(--brand-primary)] hover:underline">Ver todos</Link>
-              </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <section className="overflow-hidden rounded-2xl border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border p-4"><h2 className="font-display text-base tracking-widest text-foreground">RECENTES</h2><Link href="/admin/produtos" className="font-body text-xs text-[var(--brand-primary)] hover:underline">Ver todos</Link></div>
               <div className="divide-y divide-border">
-                {recents.map(p => (
-                  <Link key={p.id} href={`/admin/produtos/${p.id}`}
-                    className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-muted flex-shrink-0 overflow-hidden border border-border">
-                      {p.imagens?.[0] ? <img src={p.imagens[0].url} className="w-full h-full object-cover" /> : <Package size={16} className="m-auto text-muted-foreground" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-body text-sm text-foreground font-semibold truncate">{p.nome}</p>
-                      <p className="font-body text-xs text-[var(--brand-primary)]">{formatCurrency(p.preco_venda)}</p>
-                    </div>
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getEstoqueStatus(p.estoque) === 'esgotado' ? 'bg-red-500' : getEstoqueStatus(p.estoque) === 'baixo' ? 'bg-yellow-500' : 'bg-green-500'}`} />
-                  </Link>
-                ))}
+                {recents.map(product => {
+                  const image = product.imagens?.find((item: any) => item.is_principal)?.url || product.imagens?.[0]?.url
+                  return <Link key={product.id} href={`/admin/produtos/${product.id}`} className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/50"><div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted">{image ? <img src={image} alt={product.nome} className="h-full w-full object-cover" loading="lazy" /> : <Package size={16} className="text-muted-foreground" />}</div><div className="min-w-0 flex-1"><p className="truncate font-body text-sm font-semibold text-foreground">{product.nome}</p><p className="font-body text-xs text-[var(--brand-primary)]">{formatCurrency(product.preco_venda)}</p></div><span className={`h-1.5 w-1.5 shrink-0 rounded-full ${getEstoqueStatus(product.estoque) === 'esgotado' ? 'bg-red-500' : getEstoqueStatus(product.estoque) === 'baixo' ? 'bg-yellow-500' : 'bg-green-500'}`} /></Link>
+                })}
               </div>
-            </div>
+            </section>
 
-            {/* Top viewed */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <h2 className="font-display text-foreground text-base tracking-widest flex items-center gap-2"><Eye size={14} className="text-[var(--brand-primary)]" />MAIS VISTOS</h2>
-              </div>
-              <div className="divide-y divide-border">
-                {topV.map((p, i) => (
-                  <div key={p.id} className="flex items-center gap-3 p-3">
-                    <span className={`font-display text-lg w-5 text-center ${i === 0 ? 'text-[var(--brand-primary)]' : 'text-muted-foreground'}`}>{i + 1}</span>
-                    <p className="flex-1 font-body text-sm text-foreground truncate">{p.nome}</p>
-                    <span className="font-mono text-xs text-muted-foreground">{p.visualizacoes}</span>
-                  </div>
-                ))}
-                {topV.length === 0 && <p className="p-4 text-center font-body text-muted-foreground text-sm">Sem dados ainda.</p>}
-              </div>
-            </div>
-
-            {/* Top clicked (WhatsApp) */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <h2 className="font-display text-foreground text-base tracking-widest flex items-center gap-2"><MousePointerClick size={14} className="text-green-400" />MAIS CLICADOS</h2>
-              </div>
-              <div className="divide-y divide-border">
-                {topC.map((p, i) => (
-                  <div key={p.id} className="flex items-center gap-3 p-3">
-                    <span className={`font-display text-lg w-5 text-center ${i === 0 ? 'text-green-400' : 'text-muted-foreground'}`}>{i + 1}</span>
-                    <p className="flex-1 font-body text-sm text-foreground truncate">{p.nome}</p>
-                    <span className="font-mono text-xs text-green-400">{p.cliques}</span>
-                  </div>
-                ))}
-                {topC.length === 0 && <p className="p-4 text-center font-body text-muted-foreground text-sm">Sem cliques ainda.</p>}
-              </div>
-            </div>
+            <section className="overflow-hidden rounded-2xl border border-border bg-card"><div className="flex items-center justify-between border-b border-border p-4"><h2 className="flex items-center gap-2 font-display text-base tracking-widest text-foreground"><Eye size={14} className="text-[var(--brand-primary)]" />MAIS VISTOS</h2></div><Ranking products={topV} tone="text-muted-foreground" /></section>
+            <section className="overflow-hidden rounded-2xl border border-border bg-card"><div className="flex items-center justify-between border-b border-border p-4"><h2 className="flex items-center gap-2 font-display text-base tracking-widest text-foreground"><MousePointerClick size={14} className="text-green-400" />MAIS CLICADOS (7 DIAS)</h2></div><Ranking products={topC} tone="text-green-400" clicks /></section>
           </div>
         </>
       )}
-    </motion.div>
+    </div>
   )
+}
+
+function Ranking({ products, tone, clicks = false }: { products: TopProd[]; tone: string; clicks?: boolean }) {
+  if (products.length === 0) return <p className="p-4 text-center font-body text-sm text-muted-foreground">Sem dados ainda.</p>
+  return <div className="divide-y divide-border">{products.map((product, index) => <div key={product.id} className="flex items-center gap-3 p-3"><span className={`w-5 text-center font-display text-lg ${index === 0 ? tone : 'text-muted-foreground'}`}>{index + 1}</span><p className="flex-1 truncate font-body text-sm text-foreground">{product.nome}</p><span className={`font-mono text-xs ${clicks ? tone : 'text-muted-foreground'}`}>{clicks ? product.cliques : product.visualizacoes}</span></div>)}</div>
 }
