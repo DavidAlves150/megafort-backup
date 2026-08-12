@@ -28,7 +28,7 @@ export const categoriaSchema = z.object({
   nome:      z.string().min(2, 'Nome obrigatório'),
   slug:      z.string().min(2).regex(/^[a-z0-9-]+$/, 'Slug inválido'),
   descricao: z.string().optional().default(''),
-  icone:     z.string().optional().default('📦'),
+  imagem_url: z.string().url('URL de imagem inválida').nullable().optional(),
   cor:       z.string().optional().default('#00FF41'),
   ordem:     z.number().int().default(0),
   ativa:     z.boolean().default(true),

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowRight, Zap } from 'lucide-react'
+import { ArrowRight, ImageOff, Zap } from 'lucide-react'
 import { Categoria, Marca, Produto } from '@/types'
 import { ProductCard } from '@/components/products/ProductCard'
 
@@ -24,7 +24,7 @@ export function CategoriesSection({ categorias }: { categorias: Categoria[] }) {
               {cat.imagem_url ? (
                 <img src={cat.imagem_url} alt={cat.nome} className="w-12 h-12 object-contain group-hover:scale-110 transition-transform" />
               ) : (
-                <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icone}</span>
+                <ImageOff size={24} className="text-muted-foreground transition-transform group-hover:scale-110" aria-hidden="true" />
               )}
               <span className="font-body font-semibold text-foreground text-sm text-center tracking-wide leading-tight">{cat.nome}</span>
               <ArrowRight size={13} className="text-muted-foreground group-hover:text-[var(--brand-primary)] transition-colors" />

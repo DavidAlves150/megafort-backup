@@ -1,148 +1,266 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Edit, Trash2, Grid3X3, Loader2 } from 'lucide-react'
+import { Edit, Grid3X3, ImageOff, ImagePlus, Loader2, Plus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Categoria } from '@/types'
 import { slugify } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
-const empty = { nome:'', slug:'', descricao:'', icone:'📦', cor:'#00FF41', ordem:0, ativa:true, imagem_url: null as string | null }
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+const SUPPORTED_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+])
+
+const empty = {
+  nome: '',
+  slug: '',
+  descricao: '',
+  cor: '#00FF41',
+  ordem: 0,
+  ativa: true,
+  imagem_url: null as string | null,
+}
+
+type CategoryForm = typeof empty
 
 export default function CategoriasPage() {
   const [cats, setCats] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [editing, setEditing] = useState<Categoria|null>(null)
-  const [form, setForm] = useState(empty)
+  const [editing, setEditing] = useState<Categoria | null>(null)
+  const [form, setForm] = useState<CategoryForm>(empty)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
-  useEffect(()=>{ load() },[])
+  useEffect(() => { load() }, [])
 
   async function load() {
     const { data } = await supabase.from('categorias').select('*').order('ordem')
-    setCats((data||[]) as Categoria[]); setLoading(false)
+    setCats((data || []) as Categoria[])
+    setLoading(false)
   }
 
-  function openNew() { setEditing(null); setForm({...empty, ordem:cats.length}); setOpen(true) }
-  function openEdit(c:Categoria) { setEditing(c); setForm({ nome:c.nome,slug:c.slug,descricao:c.descricao||'',icone:c.icone,cor:c.cor,ordem:c.ordem,ativa:c.ativa, imagem_url: c.imagem_url || null }); setImageFile(null); setOpen(true) }
+  function resetSelectedImage() {
+    setImageFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function openNew() {
+    setEditing(null)
+    setForm({ ...empty, ordem: cats.length })
+    resetSelectedImage()
+    setOpen(true)
+  }
+
+  function openEdit(category: Categoria) {
+    setEditing(category)
+    setForm({
+      nome: category.nome,
+      slug: category.slug,
+      descricao: category.descricao || '',
+      cor: category.cor,
+      ordem: category.ordem,
+      ativa: category.ativa,
+      imagem_url: category.imagem_url || null,
+    })
+    resetSelectedImage()
+    setOpen(true)
+  }
+
+  function selectImage(file: File | null) {
+    if (!file) return
+
+    if (!SUPPORTED_IMAGE_TYPES.has(file.type.toLowerCase())) {
+      toast.error('Use JPEG, PNG, WebP, GIF ou AVIF.')
+      resetSelectedImage()
+      return
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error('A imagem deve ter no máximo 10 MB.')
+      resetSelectedImage()
+      return
+    }
+
+    setImageFile(file)
+  }
+
+  async function uploadCategoryImage(file: File, categoryName: string, categoryId?: string) {
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'image'
+    const filename = `${Date.now()}-${slugify(categoryName)}.${extension}`
+    const filePath = `${categoryId || 'novas'}/${filename}`
+
+    const { error } = await supabase.storage
+      .from('categorias')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        contentType: file.type || undefined,
+        upsert: true,
+      })
+
+    if (error) throw error
+
+    return supabase.storage.from('categorias').getPublicUrl(filePath).data.publicUrl
+  }
 
   async function save() {
-    if (!form.nome) { toast.error('Nome obrigatório'); return }
+    if (!form.nome.trim()) {
+      toast.error('Nome obrigatório')
+      return
+    }
+
+    if (!editing && !imageFile) {
+      toast.error('Envie uma imagem para criar a categoria.')
+      return
+    }
+
     setSaving(true)
-    let imageUrl = editing?.imagem_url || null
-    if (imageFile) {
-      const filePath = `categorias/${editing?.id || Date.now()}-${imageFile.name}`
-      const { data, error: uploadError } = await supabase.storage.from("public").upload(filePath, imageFile, { cacheControl: "3600", upsert: true })
-      if (uploadError) { toast.error(uploadError.message); setSaving(false); return }
-      imageUrl = supabase.storage.from("public").getPublicUrl(filePath).data.publicUrl
+
+    try {
+      let imageUrl = editing?.imagem_url || null
+      if (imageFile) imageUrl = await uploadCategoryImage(imageFile, form.nome, editing?.id)
+
+      const payload = {
+        nome: form.nome.trim(),
+        slug: form.slug || slugify(form.nome),
+        descricao: form.descricao.trim() || null,
+        cor: form.cor,
+        ordem: form.ordem,
+        ativa: form.ativa,
+        imagem_url: imageUrl,
+      }
+
+      const { error } = editing
+        ? await supabase.from('categorias').update(payload).eq('id', editing.id)
+        : await supabase.from('categorias').insert([payload])
+
+      if (error) throw error
+
+      toast.success(editing ? 'Categoria atualizada!' : 'Categoria criada!')
+      setOpen(false)
+      await load()
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Não foi possível salvar a categoria.'
+      toast.error(message)
+    } finally {
+      setSaving(false)
     }
-    const payload = { ...form, slug: form.slug || slugify(form.nome), imagem_url: imageUrl }
-    if (editing) {
-      const { error } = await supabase.from('categorias').update(payload).eq('id', editing.id)
-      if (error) { toast.error(error.message); setSaving(false); return }
-      toast.success('Atualizada!')
-    } else {
-      const { error } = await supabase.from('categorias').insert([payload])
-      if (error) { toast.error(error.message); setSaving(false); return }
-      toast.success('Criada!')
-    }
-    setOpen(false); load(); setSaving(false)
   }
 
-  async function remove(c:Categoria) {
-    if (!confirm(`Excluir "${c.nome}"?`)) return
-    await supabase.from('categorias').delete().eq('id', c.id)
-    toast.success('Excluída!'); load()
+  async function remove(category: Categoria) {
+    if (!confirm(`Excluir "${category.nome}"?`)) return
+    const { error } = await supabase.from('categorias').delete().eq('id', category.id)
+    if (error) return toast.error(error.message)
+    toast.success('Categoria excluída!')
+    load()
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-foreground text-2xl md:text-3xl tracking-widest">CATEGORIAS</h1>
-          <p className="font-body text-muted-foreground text-sm">{cats.length} categoria(s)</p>
+          <h1 className="font-display text-2xl tracking-widest text-foreground md:text-3xl">CATEGORIAS</h1>
+          <p className="font-body text-sm text-muted-foreground">{cats.length} categoria(s)</p>
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-[var(--brand-button)] text-black font-display text-sm tracking-widest rounded-xl hover:opacity-90 transition-all">
-          <Plus size={15}/> NOVA
+        <button onClick={openNew} className="flex min-h-11 items-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-2.5 font-display text-sm tracking-widest text-black transition-all hover:opacity-90">
+          <Plus size={15} /> NOVA
         </button>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        {loading ? <div className="flex items-center justify-center h-32"><Loader2 size={24} className="text-[var(--brand-primary)] animate-spin"/></div>
-        : cats.length===0 ? <div className="py-12 text-center"><Grid3X3 size={32} className="text-muted-foreground/30 mx-auto mb-2"/><p className="font-body text-muted-foreground text-sm">Nenhuma categoria.</p></div>
-        : (
-          <div className="divide-y divide-border">
-            {cats.map((c,i)=>(
-              <motion.div key={c.id} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.03}}
-                className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:`${c.cor}18`}}>
-                  {c.imagem_url ? <img src={c.imagem_url} alt={c.nome} className="w-full h-full object-cover rounded-xl" /> : c.icone}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-body font-semibold text-foreground text-sm">{c.nome}</p>
-                    {!c.ativa && <span className="text-[10px] px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded font-body">INATIVA</span>}
-                  </div>
-                  <p className="font-mono text-muted-foreground text-xs">/categoria/{c.slug}</p>
-                </div>
-                <span className="font-mono text-muted-foreground text-xs hidden sm:block">#{c.ordem}</span>
-                <div className="flex items-center gap-1.5">
-                  <button onClick={()=>openEdit(c)} className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center text-muted-foreground hover:text-[var(--brand-primary)] transition-colors"><Edit size={12}/></button>
-                  <button onClick={()=>remove(c)} className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-400 transition-colors"><Trash2 size={12}/></button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        {loading ? <div className="flex h-32 items-center justify-center"><Loader2 size={24} className="animate-spin text-[var(--brand-primary)]" /></div>
+          : cats.length === 0 ? <div className="py-12 text-center"><Grid3X3 size={32} className="mx-auto mb-2 text-muted-foreground/30" /><p className="font-body text-sm text-muted-foreground">Nenhuma categoria.</p></div>
+            : (
+              <div className="divide-y divide-border">
+                {cats.map((category, index) => (
+                  <motion.div key={category.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.03 }}
+                    className="flex min-w-0 items-center gap-3 p-4 transition-colors hover:bg-muted/30">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl" style={{ background: `${category.cor}18` }}>
+                      {category.imagem_url
+                        ? <img src={category.imagem_url} alt={category.nome} className="h-full w-full object-cover" />
+                        : <ImageOff size={18} className="text-muted-foreground" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-body text-sm font-semibold text-foreground">{category.nome}</p>
+                        {!category.ativa && <span className="rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 font-body text-[10px] text-red-400">INATIVA</span>}
+                      </div>
+                      <p className="truncate font-mono text-xs text-muted-foreground">/categoria/{category.slug}</p>
+                    </div>
+                    <span className="hidden font-mono text-xs text-muted-foreground sm:block">#{category.ordem}</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button onClick={() => openEdit(category)} aria-label={`Editar ${category.nome}`} className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:text-[var(--brand-primary)]"><Edit size={16} /></button>
+                      <button onClick={() => remove(category)} aria-label={`Excluir ${category.nome}`} className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:text-red-400"><Trash2 size={16} /></button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4" onClick={()=>setOpen(false)}>
-          <motion.div initial={{y:40,opacity:0}} animate={{y:0,opacity:1}} onClick={e=>e.stopPropagation()}
-            className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="font-display text-foreground text-xl tracking-widest">{editing?'EDITAR':'NOVA'} CATEGORIA</h2>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center" onClick={() => setOpen(false)}>
+          <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={event => event.stopPropagation()}
+            className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <div>
+              <h2 className="font-display text-xl tracking-widest text-foreground">{editing ? 'EDITAR' : 'NOVA'} CATEGORIA</h2>
+              <p className="mt-1 font-body text-xs text-muted-foreground">A categoria é identificada por imagem; não há mais seleção de ícone.</p>
+            </div>
+
             {[
-              {k:'nome',l:'Nome *',p:'Ex: Whey Protein'},
-              {k:'slug',l:'Slug',p:'ex: whey-protein'},
-              {k:'descricao',l:'Descrição',p:'Descrição breve...'},
-            ].map(f=>(
-              <div key={f.k}>
-                <label className="form-label">{f.l}</label>
-                <input value={(form as any)[f.k]} placeholder={f.p} className="form-input"
-                  onChange={e=>{ const v=e.target.value; setForm({...form,[f.k]:v,...(f.k==='nome'&&!editing?{slug:slugify(v)}:{})}) }}/>
+              { key: 'nome', label: 'Nome *', placeholder: 'Ex.: Creatina' },
+              { key: 'slug', label: 'Slug', placeholder: 'Ex.: creatina' },
+              { key: 'descricao', label: 'Descrição', placeholder: 'Descrição breve...' },
+            ].map(field => (
+              <div key={field.key}>
+                <label className="form-label">{field.label}</label>
+                <input value={form[field.key as keyof Pick<CategoryForm, 'nome' | 'slug' | 'descricao'>]} placeholder={field.placeholder} className="form-input"
+                  onChange={event => {
+                    const value = event.target.value
+                    setForm(current => ({ ...current, [field.key]: value, ...(field.key === 'nome' && !editing ? { slug: slugify(value) } : {}) }))
+                  }} />
               </div>
             ))}
-            <div className="grid grid-cols-3 gap-3">
-              <div><label className="form-label">Ícone</label><input value={form.icone} onChange={e=>setForm({...form,icone:e.target.value})} className="form-input text-center text-xl"/></div>
-              <div><label className="form-label">Cor</label><input type="color" value={form.cor} onChange={e=>setForm({...form,cor:e.target.value})} className="form-input h-11 p-1 cursor-pointer"/></div>
-              <div><label className="form-label">Ordem</label><input type="number" value={form.ordem} onChange={e=>setForm({...form,ordem:Number(e.target.value)})} className="form-input"/></div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="form-label">Cor de destaque</label><input type="color" value={form.cor} onChange={event => setForm({ ...form, cor: event.target.value })} className="form-input cursor-pointer p-1" /></div>
+              <div><label className="form-label">Ordem</label><input type="number" min="0" value={form.ordem} onChange={event => setForm({ ...form, ordem: Number(event.target.value) })} className="form-input" /></div>
             </div>
+
             <div>
-              <label className="form-label">Imagem da Categoria</label>
-              <input type="file" accept="image/*" onChange={e=>setImageFile(e.target.files?.[0] || null)} ref={fileInputRef} className="form-input"/>
-              {editing?.imagem_url && !imageFile && (
-                <p className="text-sm text-muted-foreground mt-2">Imagem atual: <a href={editing.imagem_url} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-primary)]">Ver Imagem</a></p>
-              )}
-              {imageFile && (
-                <p className="text-sm text-muted-foreground mt-2">Nova imagem selecionada: {imageFile.name}</p>
-              )}
+              <label className="form-label">Imagem da categoria {editing ? '(opcional para substituir)' : '*'}</label>
+              <input ref={fileInputRef} id="category-image" type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/avif,.jpg,.jpeg,.png,.webp,.gif,.avif" className="sr-only" onChange={event => selectImage(event.target.files?.[0] || null)} />
+              <label htmlFor="category-image" className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 font-body text-sm font-semibold text-foreground transition-colors hover:border-[var(--brand-primary)]/60 hover:bg-[var(--brand-primary)]/5">
+                <ImagePlus size={17} className="text-[var(--brand-primary)]" />
+                {imageFile ? 'TROCAR IMAGEM' : 'SELECIONAR IMAGEM'}
+              </label>
+              <p className="mt-2 font-body text-xs text-muted-foreground">Aceita imagens PNG, JPEG, WebP, GIF e AVIF de até 10 MB.</p>
+              {imageFile && <p className="mt-1 truncate font-body text-sm text-foreground">Selecionada: {imageFile.name}</p>}
+              {editing?.imagem_url && !imageFile && <a href={editing.imagem_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex font-body text-sm text-[var(--brand-primary)] hover:underline">Ver imagem atual</a>}
             </div>
+
             <div className="flex items-center gap-3">
               <label className="form-label mb-0">Ativa</label>
-              <button type="button" onClick={()=>setForm({...form,ativa:!form.ativa})}
-                className={`w-11 h-6 rounded-full transition-all relative ${form.ativa?'bg-[var(--brand-primary)]':'bg-muted border border-border'}`}>
-                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm ${form.ativa?'translate-x-5':'translate-x-0.5'}`}/>
+              <button type="button" onClick={() => setForm({ ...form, ativa: !form.ativa })} aria-label="Alternar categoria ativa"
+                className={`relative h-7 w-12 rounded-full transition-all ${form.ativa ? 'bg-[var(--brand-primary)]' : 'border border-border bg-muted'}`}>
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${form.ativa ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
             </div>
-            <div className="flex gap-3">
-              <button onClick={save} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-3 bg-[var(--brand-button)] text-black font-display tracking-widest rounded-xl hover:opacity-90 disabled:opacity-60 transition-all">
-                {saving&&<Loader2 size={14} className="animate-spin"/>} SALVAR
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
+              <button onClick={() => setOpen(false)} className="min-h-11 px-5 py-3 font-display tracking-widest text-foreground transition-all hover:text-[var(--brand-primary)]">CANCELAR</button>
+              <button onClick={save} disabled={saving} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--brand-button)] px-5 py-3 font-display tracking-widest text-black transition-all hover:opacity-90 disabled:opacity-60">
+                {saving && <Loader2 size={14} className="animate-spin" />} SALVAR
               </button>
-              <button onClick={()=>setOpen(false)} className="px-5 py-3 bg-muted border border-border text-foreground font-display tracking-widest rounded-xl hover:border-border/50 transition-all">CANCELAR</button>
             </div>
           </motion.div>
         </div>

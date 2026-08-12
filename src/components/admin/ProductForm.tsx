@@ -225,7 +225,7 @@ export function ProductForm({ produto }: Props) {
             <label className="form-label">Categoria</label>
             <select {...register('categoria_id')} className="form-input">
               <option value="">Sem categoria</option>
-              {categorias.map(c => <option key={c.id} value={c.id}>{c.icone} {c.nome}</option>)}
+              {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
           </div>
           <div>

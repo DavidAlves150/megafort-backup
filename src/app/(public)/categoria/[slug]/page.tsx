@@ -31,7 +31,7 @@ export default async function CategoriaPage({ params }: Props) {
       <Header />
       <main className="min-h-screen pt-16">
         <div className="bg-surface-2 border-b border-border px-4 py-10 text-center">
-          <span className="text-4xl block mb-2">{cat.icone}</span>
+          {cat.imagem_url && <img src={cat.imagem_url} alt={cat.nome} className="mx-auto mb-3 h-16 w-16 rounded-xl object-cover" />}
           <h1 className="font-display text-foreground text-4xl md:text-5xl tracking-widest">{cat.nome.toUpperCase()}</h1>
           {cat.descricao && <p className="font-body text-muted-foreground text-sm mt-2 max-w-md mx-auto">{cat.descricao}</p>}
           <p className="font-body text-muted-foreground text-xs mt-2">{(produtos||[]).length} produto(s)</p>

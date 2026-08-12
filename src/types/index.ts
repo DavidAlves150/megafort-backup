@@ -7,7 +7,6 @@ export interface Categoria {
   nome: string
   slug: string
   descricao: string | null
-  icone: string
   imagem_url: string | null
   cor: string
   ordem: number

@@ -131,7 +131,7 @@ function CatalogContent() {
                     <button key={c.id} onClick={() => setCatSlug(catSlug === c.slug ? '' : c.slug)}
                       className={cn('px-3 py-1.5 rounded-full text-xs font-body font-semibold border transition-all',
                         catSlug === c.slug ? 'bg-[var(--brand-primary)] text-black border-transparent' : 'bg-muted border-border text-muted-foreground hover:border-[var(--brand-primary)]/30')}>
-                      {c.icone} {c.nome}
+                      {c.nome}
                     </button>
                   ))}
                 </div>
