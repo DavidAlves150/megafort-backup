@@ -33,12 +33,12 @@ DROP POLICY IF EXISTS "Authenticated manage categoria images" ON storage.objects
 DROP POLICY IF EXISTS "Public read categorias storage" ON storage.objects;
 DROP POLICY IF EXISTS "Admin can manage categorias storage" ON storage.objects;
 
-CREATE POLICY "Public read categorias storage"
+CREATE POLICY "Public read categoria images"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'categorias');
 
-CREATE POLICY "Admin can manage categorias storage"
+CREATE POLICY "Authenticated manage categoria images"
 ON storage.objects FOR ALL
 TO "authenticated"
 USING (bucket_id = 'categorias')
