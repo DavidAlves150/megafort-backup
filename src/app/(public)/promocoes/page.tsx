@@ -4,7 +4,7 @@ import { WhatsAppButton } from '@/components/layout/WhatsAppButton'
 import { ProductCard } from '@/components/products/ProductCard'
 import { createClient } from '@/lib/supabase/server'
 
-export const metadata = { title: 'Promoções | MegaFort Suplementos' }
+export const metadata = { title: 'Promoções | VIBE FITNESS' }
 
 export default async function PromocoesPage() {
   const supabase = await createClient()

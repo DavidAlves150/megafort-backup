@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import * as XLSX from 'xlsx'
+import { isAdministrator } from '@/lib/admin-access'
+import { readAll } from '@/lib/read-all'
 
 export async function GET() {
   const supabase = await createClient()
 
-  const { data: produtos } = await supabase.from('produtos')
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return NextResponse.json({ error: 'Autenticação necessária.' }, { status: 401 })
+  if (!isAdministrator(user)) return NextResponse.json({ error: 'Acesso administrativo necessário.' }, { status: 403 })
+
+  const { data: produtos, error } = await readAll((from, to) => supabase.from('produtos')
     .select('nome,sku,preco_compra,preco_venda,preco_promocional,estoque,em_destaque,em_promocao,ativo,visualizacoes,criado_em, categoria:categorias(nome), marca:marcas(nome)')
-    .order('nome')
+    .order('nome').order('id').range(from, to))
+  if (error) return NextResponse.json({ error: 'Não foi possível exportar todos os produtos.' }, { status: 503 })
 
   const rows = (produtos || []).map((p: any) => ({
     Nome: p.nome,
@@ -47,7 +54,7 @@ export async function GET() {
   return new NextResponse(buf, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="megafort-catalogo-${new Date().toISOString().slice(0,10)}.xlsx"`,
+      'Content-Disposition': `attachment; filename="vibe-fitness-catalogo-${new Date().toISOString().slice(0,10)}.xlsx"`,
     },
   })
 }

@@ -47,23 +47,27 @@ export default function BannersPage() {
     if (!form.imagem_url) { toast.error('Imagem obrigatória'); return }
     setSaving(true)
     if (editing) {
-      await supabase.from('banners').update(form).eq('id', editing.id)
+      const { error } = await supabase.from('banners').update(form).eq('id', editing.id)
+      if (error) { toast.error(error.message); setSaving(false); return }
       toast.success('Atualizado!')
     } else {
-      await supabase.from('banners').insert([form])
+      const { error } = await supabase.from('banners').insert([form])
+      if (error) { toast.error(error.message); setSaving(false); return }
       toast.success('Criado!')
     }
     setOpen(false); load(); setSaving(false)
   }
 
   async function toggle(b:Banner) {
-    await supabase.from('banners').update({ ativo:!b.ativo }).eq('id', b.id)
+    const { error } = await supabase.from('banners').update({ ativo:!b.ativo }).eq('id', b.id)
+    if (error) { toast.error(error.message); return }
     load()
   }
 
   async function remove(b:Banner) {
     if (!confirm('Excluir banner?')) return
-    await supabase.from('banners').delete().eq('id', b.id)
+    const { error } = await supabase.from('banners').delete().eq('id', b.id)
+    if (error) { toast.error(error.message); return }
     toast.success('Excluído!'); load()
   }
 

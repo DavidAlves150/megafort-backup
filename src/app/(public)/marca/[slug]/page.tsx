@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
   const { data } = await supabase.from('marcas').select('nome').eq('slug', slug).single()
-  return { title: data ? `${data.nome} | MegaFort Suplementos` : 'Marca | MegaFort' }
+  return { title: data ? `${data.nome} | VIBE FITNESS` : 'Marca | VIBE FITNESS' }
 }
 
 export default async function MarcaPage({ params }: Props) {

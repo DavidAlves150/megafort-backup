@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, X, Loader2, Play, Image as ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -13,13 +13,16 @@ interface MediaUploadProps {
   onVideosChange: (vids: string[]) => void
   maxImages?: number
   maxVideos?: number
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 export function MediaUpload({
   images, videos, onImagesChange, onVideosChange,
   maxImages = 10, maxVideos = 3,
+  onUploadingChange,
 }: MediaUploadProps) {
   const [uploading, setUploading] = useState(false)
+  const busy = useRef(false)
   const [dragOver, setDragOver]   = useState(false)
   const supabase = createClient()
 
@@ -40,21 +43,35 @@ export function MediaUpload({
   }, [supabase])
 
   const handleFiles = useCallback(async (files: FileList | null) => {
-    if (!files?.length) return
+    if (!files?.length || busy.current) return
+    busy.current = true
     setUploading(true)
+    onUploadingChange?.(true)
+    const nextImages = [...images]
+    const nextVideos = [...videos]
+    let added = 0
+    try {
     for (const file of Array.from(files)) {
+      const isVideo = file.type.startsWith('video/')
+      if ((isVideo ? nextVideos.length >= maxVideos : nextImages.length >= maxImages)) {
+        toast.error(isVideo ? `Máximo ${maxVideos} vídeos.` : `Máximo ${maxImages} imagens.`)
+        continue
+      }
       const url = await upload(file)
       if (!url) continue
-      if (file.type.startsWith('video/')) {
-        if (videos.length < maxVideos) onVideosChange([...videos, url])
-        else toast.error(`Máximo ${maxVideos} vídeos.`)
-      } else {
-        if (images.length < maxImages) onImagesChange([...images, url])
-        else toast.error(`Máximo ${maxImages} imagens.`)
-      }
+      if (isVideo) nextVideos.push(url)
+      else nextImages.push(url)
+      added++
+      onImagesChange([...nextImages])
+      onVideosChange([...nextVideos])
     }
-    toast.success('Mídia enviada!')
-    setUploading(false)
+    if (added) toast.success(`${added} arquivo(s) enviado(s).`)
+    } catch { toast.error('Falha no envio. Confira os arquivos antes de salvar.') }
+    finally {
+      busy.current = false
+      setUploading(false)
+      onUploadingChange?.(false)
+    }
   }, [images, videos, maxImages, maxVideos, upload, onImagesChange, onVideosChange])
 
   return (
@@ -96,7 +113,7 @@ export function MediaUpload({
                   className="relative aspect-square group">
                   <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-border" />
                   {i === 0 && <span className="absolute bottom-1 left-1 text-[9px] bg-[var(--brand-primary)] text-black px-1.5 py-0.5 rounded font-display">CAPA</span>}
-                  <button onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
+                  <button type="button" disabled={uploading} aria-label="Remover imagem" onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
                     className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <X size={10} className="text-white" />
                   </button>
@@ -120,7 +137,7 @@ export function MediaUpload({
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Play size={20} className="text-white/80 fill-white/80" />
                   </div>
-                  <button onClick={() => onVideosChange(videos.filter((_, j) => j !== i))}
+                  <button type="button" disabled={uploading} aria-label="Remover vídeo" onClick={() => onVideosChange(videos.filter((_, j) => j !== i))}
                     className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <X size={10} className="text-white" />
                   </button>

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Instagram, Phone, Clock, MapPin, MessageCircle } from 'lucide-react'
 
-export const metadata = { title: 'Contato | MegaFort Suplementos' }
+export const metadata = { title: 'Contato | VIBE FITNESS' }
 
 export default async function ContatoPage() {
   const supabase = await createClient()
@@ -34,13 +34,13 @@ export default async function ContatoPage() {
             <p className="font-body text-muted-foreground text-xs mt-1">Clique para iniciar uma conversa</p>
           </Link>
 
-          <Link href={cfg.instagram || 'https://www.instagram.com/megafort_suplementos'} target="_blank" rel="noopener"
+          <Link href={'https://www.instagram.com/vibefit_oficial1/'} target="_blank" rel="noopener"
             className="group p-6 bg-card border border-border rounded-2xl hover:border-pink-500/30 hover:-translate-y-1 transition-all">
             <div className="w-12 h-12 bg-pink-500/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Instagram size={22} className="text-pink-400" />
             </div>
             <h2 className="font-display text-foreground text-xl tracking-widest mb-1">INSTAGRAM</h2>
-            <p className="font-body text-pink-400 font-semibold">@{cfg.instagram_user || 'megafort_suplementos'}</p>
+            <p className="font-body text-pink-400 font-semibold">@{'vibefit_oficial1'}</p>
             <p className="font-body text-muted-foreground text-xs mt-1">Siga para novidades diárias</p>
           </Link>
 

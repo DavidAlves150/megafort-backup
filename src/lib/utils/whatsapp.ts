@@ -9,7 +9,7 @@ export function getWhatsApp(): string {
 
 export function buildWhatsAppLink(produto: Produto): string {
   const preco = formatCurrency(getPrecoAtual(produto))
-  const msg = `Olá! Tenho interesse no produto *${produto.nome}* que vi no catálogo da MegaFort Suplementos.\n\nPreço: ${preco}\n\nGostaria de mais informações.`
+  const msg = `Olá! Tenho interesse no produto *${produto.nome}* que vi no catálogo da VIBE FITNESS.\n\nPreço: ${preco}\n\nGostaria de mais informações.`
   return `https://wa.me/${getWhatsApp()}?text=${encodeURIComponent(msg)}`
 }
 

@@ -4,6 +4,24 @@ import { Loader2, Save, Settings, Phone, Clock, Palette, Building } from 'lucide
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
+  const Section = ({icon:Icon,title,children}:any) => (
+    <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+      <h2 className="font-display text-foreground text-lg tracking-widest flex items-center gap-2"><Icon size={16} className="text-[var(--brand-primary)]"/>{title}</h2>
+      {children}
+    </div>
+  )
+
+  const Field = ({k,label,placeholder,type='text',cfg,set}:{k:string,label:string,placeholder?:string,type?:string,cfg:Record<string,string>,set:(k:string,v:string)=>void}) => (
+    <div>
+      <label className="form-label">{label}</label>
+      {type==='textarea'
+        ? <textarea value={cfg[k]||''} onChange={e=>set(k,e.target.value)} placeholder={placeholder} rows={3} className="form-input resize-none"/>
+        : <input type={type} value={cfg[k]||''} onChange={e=>set(k,e.target.value)} placeholder={placeholder} className={`form-input ${type==='color'?'h-11 p-1.5 cursor-pointer':''}`}/>
+      }
+    </div>
+  )
+
+
 export default function ConfiguracoesPage() {
   const [cfg, setCfg] = useState<Record<string,string>>({})
   const [loading, setLoading] = useState(true)
@@ -32,23 +50,6 @@ export default function ConfiguracoesPage() {
     finally { setSaving(false) }
   }
 
-  const Section = ({icon:Icon,title,children}:any) => (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-      <h2 className="font-display text-foreground text-lg tracking-widest flex items-center gap-2"><Icon size={16} className="text-[var(--brand-primary)]"/>{title}</h2>
-      {children}
-    </div>
-  )
-
-  const Field = ({k,label,placeholder,type='text'}:{k:string,label:string,placeholder?:string,type?:string}) => (
-    <div>
-      <label className="form-label">{label}</label>
-      {type==='textarea'
-        ? <textarea value={cfg[k]||''} onChange={e=>set(k,e.target.value)} placeholder={placeholder} rows={3} className="form-input resize-none"/>
-        : <input type={type} value={cfg[k]||''} onChange={e=>set(k,e.target.value)} placeholder={placeholder} className={`form-input ${type==='color'?'h-11 p-1.5 cursor-pointer':''}`}/>
-      }
-    </div>
-  )
-
   if (loading) return <div className="flex items-center justify-center h-48"><Loader2 size={28} className="text-[var(--brand-primary)] animate-spin"/></div>
 
   return (
@@ -64,9 +65,9 @@ export default function ConfiguracoesPage() {
       </div>
 
       <Section icon={Building} title="DADOS DA LOJA">
-        <Field k="nome_empresa" label="Nome da Empresa" placeholder="MegaFort Suplementos"/>
-        <Field k="slogan" label="Slogan" placeholder="A melhor loja da região"/>
-        <Field k="cidade" label="Cidade" placeholder="Santa Luzia do Paruá - MA"/>
+        <Field cfg={cfg} set={set} k="nome_empresa" label="Nome da Empresa" placeholder="VIBE FITNESS"/>
+        <Field cfg={cfg} set={set} k="slogan" label="Slogan" placeholder="A melhor loja da região"/>
+        <Field cfg={cfg} set={set} k="cidade" label="Cidade" placeholder="Santa Luzia do Paruá - MA"/>
         <div>
           <label className="form-label">Logo (URL)</label>
           <input value={cfg.logo_url||''} onChange={e=>set('logo_url',e.target.value)} placeholder="https://..." className="form-input"/>
@@ -75,15 +76,15 @@ export default function ConfiguracoesPage() {
       </Section>
 
       <Section icon={Phone} title="CONTATO">
-        <Field k="whatsapp" label="WhatsApp (somente números)" placeholder="5598885916645"/>
+        <Field cfg={cfg} set={set} k="whatsapp" label="WhatsApp (somente números)" placeholder="5598885916645"/>
         <p className="font-body text-muted-foreground text-xs -mt-2">Ex: 5598885916645 (DDI+DDD+número)</p>
-        <Field k="instagram" label="Instagram (URL completa)" placeholder="https://www.instagram.com/megafort_suplementos"/>
-        <Field k="instagram_user" label="Usuário do Instagram (@...)" placeholder="megafort_suplementos"/>
+        <Field cfg={cfg} set={set} k="instagram" label="Instagram (URL completa)" placeholder="https://www.instagram.com/vibefit_oficial1"/>
+        <Field cfg={cfg} set={set} k="instagram_user" label="Usuário do Instagram (@...)" placeholder="vibefit_oficial1"/>
       </Section>
 
       <Section icon={Clock} title="HORÁRIO">
-        <Field k="horario_semana" label="Segunda a Sexta" placeholder="Segunda a Sexta: 08h às 18h"/>
-        <Field k="horario_sabado" label="Sábado" placeholder="Sábado: 08h às 11h30"/>
+        <Field cfg={cfg} set={set} k="horario_semana" label="Segunda a Sexta" placeholder="Segunda a Sexta: 08h às 18h"/>
+        <Field cfg={cfg} set={set} k="horario_sabado" label="Sábado" placeholder="Sábado: 08h às 11h30"/>
       </Section>
 
       <Section icon={Palette} title="CORES DA MARCA">
@@ -97,8 +98,8 @@ export default function ConfiguracoesPage() {
             <div key={c.k}>
               <label className="form-label">{c.l}</label>
               <div className="flex gap-2 items-center">
-                <input type="color" value={cfg[c.k]||'#00FF41'} onChange={e=>set(c.k,e.target.value)} className="w-11 h-11 p-1.5 rounded-xl border border-border cursor-pointer bg-card"/>
-                <input value={cfg[c.k]||''} onChange={e=>set(c.k,e.target.value)} placeholder="#00FF41" className="form-input flex-1 font-mono text-sm"/>
+                <input type="color" value={cfg[c.k]||'#F58FA9'} onChange={e=>set(c.k,e.target.value)} className="w-11 h-11 p-1.5 rounded-xl border border-border cursor-pointer bg-card"/>
+                <input value={cfg[c.k]||''} onChange={e=>set(c.k,e.target.value)} placeholder="#F58FA9" className="form-input flex-1 font-mono text-sm"/>
               </div>
             </div>
           ))}
@@ -106,14 +107,14 @@ export default function ConfiguracoesPage() {
       </Section>
 
       <Section icon={Settings} title="SOBRE A LOJA">
-        <Field k="sobre_historia" label="História" placeholder="Nossa história..." type="textarea"/>
-        <Field k="sobre_missao" label="Missão" placeholder="Nossa missão..."/>
-        <Field k="sobre_valores" label="Valores" placeholder="Nossos valores..."/>
+        <Field cfg={cfg} set={set} k="sobre_historia" label="História" placeholder="Nossa história..." type="textarea"/>
+        <Field cfg={cfg} set={set} k="sobre_missao" label="Missão" placeholder="Nossa missão..."/>
+        <Field cfg={cfg} set={set} k="sobre_valores" label="Valores" placeholder="Nossos valores..."/>
       </Section>
 
       <Section icon={Settings} title="SEO">
-        <Field k="meta_titulo" label="Título da Página Principal" placeholder="MegaFort Suplementos - ..."/>
-        <Field k="meta_descricao" label="Descrição (Meta Description)" placeholder="Descrição para buscadores..." type="textarea"/>
+        <Field cfg={cfg} set={set} k="meta_titulo" label="Título da Página Principal" placeholder="VIBE FITNESS - ..."/>
+        <Field cfg={cfg} set={set} k="meta_descricao" label="Descrição (Meta Description)" placeholder="Descrição para buscadores..." type="textarea"/>
       </Section>
 
       <button onClick={save} disabled={saving}

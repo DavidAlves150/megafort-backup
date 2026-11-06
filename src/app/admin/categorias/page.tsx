@@ -22,7 +22,7 @@ const empty = {
   nome: '',
   slug: '',
   descricao: '',
-  cor: '#00FF41',
+  cor: '#F58FA9',
   ordem: 0,
   ativa: true,
   imagem_url: null as string | null,

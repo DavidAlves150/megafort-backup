@@ -8,6 +8,7 @@ import { Produto } from '@/types'
 import { cn, formatCurrency } from '@/lib/utils'
 import { StockBadge } from '@/components/products/StockBadge'
 import toast from 'react-hot-toast'
+import { readAll } from '@/lib/read-all'
 
 const ADMIN_PRODUCT_SELECT = 'id,nome,slug,preco_venda,estoque,ativo,em_destaque,em_promocao,visualizacoes,criado_em,categoria:categorias(nome),marca:marcas(nome),imagens:product_images(url,is_principal)'
 
@@ -23,10 +24,12 @@ export default function ProdutosPage() {
     const currentRequest = ++requestId.current
     setLoading(true)
 
+    const { data, error } = await readAll((from, to) => {
     let query = supabase.from('produtos').select(ADMIN_PRODUCT_SELECT).order('criado_em', { ascending: false })
     if (busca.trim()) query = query.ilike('nome', `%${busca.trim()}%`)
 
-    const { data, error } = await query.limit(60)
+    return query.order('id').range(from, to)
+    })
     if (currentRequest !== requestId.current) return
     if (error) toast.error(error.message)
     setProdutos((data || []) as unknown as Produto[])
@@ -55,13 +58,13 @@ export default function ProdutosPage() {
     const { id, criado_em, atualizado_em, slug, visualizacoes, ...rest } = original
     const { data: copy, error } = await supabase
       .from('produtos')
-      .insert([{ ...rest, nome: `${product.nome} (Cópia)`, slug: `${product.slug}-copia-${Date.now()}` }])
+      .insert([{ ...rest, estoque: 0, ativo: false, nome: `${product.nome} (Cópia)`, slug: `${product.slug}-copia-${Date.now()}` }])
       .select(ADMIN_PRODUCT_SELECT)
       .single()
 
     if (error) return toast.error(error.message)
     if (copy) setProdutos(current => [copy as unknown as Produto, ...current])
-    toast.success('Produto duplicado.')
+    toast.success('Cópia criada como inativa e sem estoque. Revise fotos e variações antes de ativar.')
   }
 
   async function excluir(product: Produto) {

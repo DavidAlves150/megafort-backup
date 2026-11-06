@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import { Save, Loader2, DollarSign, Package, Tag, Layers, ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { MediaUpload } from './MediaUpload'
-import { produtoSchema, type ProdutoSchema, type ProductVariationSchema, type ProductVariationOptionSchema } from '@/lib/validations'
+import { produtoSchema, type ProdutoSchema, type ProdutoInput, type ProductVariationSchema, type ProductVariationOptionSchema } from '@/lib/validations'
 import { slugify, formatCurrency, calcLucroPotencial } from '@/lib/utils'
 import { Categoria, Marca, Produto, ProductVariation, ProductVariationOption, ProductStockVariation } from '@/types'
 import toast from 'react-hot-toast'
@@ -18,23 +18,34 @@ const TAMANHOS = ['PP','P','M','G','GG','EGG','34','36','38','40','42','44']
 
 interface Props { produto?: Produto }
 
+function Section({ icon: Icon, title, children }: any) {
+  return <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+    <h2 className="font-display text-foreground text-lg tracking-widest flex items-center gap-2">
+      <Icon size={16} className="text-[var(--brand-primary)]" />{title}
+    </h2>{children}
+  </div>
+}
+
 export function ProductForm({ produto }: Props) {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [marcas,     setMarcas]     = useState<Marca[]>([])
   const [imgUrls,    setImgUrls]    = useState<string[]>([])
   const [vidUrls,    setVidUrls]    = useState<string[]>([])
-  const [hasVariations, setHasVariations] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [mediaUploading, setMediaUploading] = useState(false)
   const router  = useRouter()
   const supabase = createClient()
   const isEdit   = !!produto
 
-  const { register, handleSubmit, control, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<ProdutoSchema>({
+  const { register, handleSubmit, control, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<ProdutoInput, unknown, ProdutoSchema>({
     resolver: zodResolver(produtoSchema),
     defaultValues: produto ? {
       nome: produto.nome, descricao: produto.descricao || '', descricao_curta: produto.descricao_curta || '',
       preco_compra: produto.preco_compra, preco_venda: produto.preco_venda,
       preco_promocional: produto.preco_promocional ?? undefined,
       sku: produto.sku || '',
+      estoque: produto.estoque,
       categoria_id: produto.categoria_id ?? undefined, marca_id: produto.marca_id ?? undefined,
       em_destaque: produto.em_destaque, em_promocao: produto.em_promocao, ativo: produto.ativo,
     } : { nome:'', descricao:'', descricao_curta:'', preco_compra:0, preco_venda:0, em_destaque:false, em_promocao:false, ativo:true, variacoes: [] },
@@ -48,35 +59,53 @@ export function ProductForm({ produto }: Props) {
   // Calcular estoque total das variações
   const wEstoque = wVariacoes.reduce((total, v) => {
     return total + (v.opcoes?.reduce((sum, o) => sum + (Number(o.estoque) || 0), 0) || 0)
-  }, 0)
+  }, 0) || (wVariacoes.length === 0 ? (watch('estoque') || 0) : 0)
   
   const lucro    = calcLucroPotencial(wCompra, wVenda, wEstoque)
 
   useEffect(() => {
+    let active = true
     async function load() {
-      const [{ data: cats }, { data: mrcs }] = await Promise.all([
-        supabase.from('categorias').select('*').eq('ativa', true).order('ordem'),
-        supabase.from('marcas').select('*').eq('ativa', true).order('nome'),
-      ])
-      setCategorias(cats || [])
-      setMarcas(mrcs || [])
+      try {
+        const [cats, mrcs, images, videos, variations, stocks] = await Promise.all([
+          supabase.from('categorias').select('*').eq('ativa', true).order('ordem'),
+          supabase.from('marcas').select('*').eq('ativa', true).order('nome'),
+          produto ? supabase.from('product_images').select('url').eq('produto_id', produto.id).order('ordem') : Promise.resolve({ data: [], error: null }),
+          produto ? supabase.from('product_videos').select('url').eq('produto_id', produto.id).order('ordem') : Promise.resolve({ data: [], error: null }),
+          produto ? supabase.from('product_variations').select('id,nome,ordem,opcoes:product_variation_options(id,valor,ordem)').eq('produto_id', produto.id).order('ordem') : Promise.resolve({ data: [], error: null }),
+          produto ? supabase.from('product_stock_variations').select('option_id,estoque').eq('produto_id', produto.id) : Promise.resolve({ data: [], error: null }),
+        ])
+        for (const result of [cats, mrcs, images, videos, variations, stocks]) {
+          if (result.error) throw result.error
+        }
+        if (!active) return
+        setCategorias(cats.data || [])
+        setMarcas(mrcs.data || [])
+        setImgUrls((images.data || []).map(d => d.url))
+        setVidUrls((videos.data || []).map(d => d.url))
+        setValue('variacoes', (variations.data || []).map(v => ({
+          id: v.id, nome: v.nome,
+          opcoes: [...v.opcoes].sort((a, b) => a.ordem - b.ordem).map(o => ({
+            id: o.id, valor: o.valor,
+            estoque: stocks.data?.find(s => s.option_id === o.id)?.estoque ?? 0,
+          })),
+        })))
+        setLoaded(true)
+      } catch {
+        if (active) setLoadError(true)
+      }
     }
     load()
-    if (produto) {
-      // Load existing media
-      supabase.from('product_images').select('url').eq('produto_id', produto.id).order('ordem')
-        .then(({ data }) => setImgUrls(data?.map(d => d.url) || []))
-      supabase.from('product_videos').select('url').eq('produto_id', produto.id).order('ordem')
-        .then(({ data }) => setVidUrls(data?.map(d => d.url) || []))
-    }
+    return () => { active = false }
   }, [produto?.id])
 
   const onSubmit = async (data: ProdutoSchema) => {
+    if (!loaded || mediaUploading) return
     try {
       const slug   = slugify(data.nome)
       
       // Calcular o estoque total somando as variações (se houver)
-      let estoqueTotal = 0
+      let estoqueTotal = data.variacoes?.length ? 0 : data.estoque
       if (data.variacoes && data.variacoes.length > 0) {
         data.variacoes.forEach(v => {
           v.opcoes.forEach(o => {
@@ -96,66 +125,15 @@ export function ProductForm({ produto }: Props) {
         marca_id: data.marca_id || null,
       }
 
-      let produtoId = produto?.id
-
-      if (isEdit) {
-        const { error } = await supabase.from('produtos').update(payload).eq('id', produto!.id)
-        if (error) throw error
-      } else {
-        const { data: novo, error } = await supabase.from('produtos').insert([payload]).select().single()
-        if (error) throw error
-        produtoId = novo.id
-      }
-
-      // Sync images & variations
-      if (produtoId) {
-        await supabase.from('product_images').delete().eq('produto_id', produtoId)
-        if (imgUrls.length) {
-          await supabase.from('product_images').insert(
-            imgUrls.map((url, i) => ({ produto_id: produtoId!, url, ordem: i, is_principal: i === 0 }))
-          )
-        }
-        await supabase.from('product_videos').delete().eq('produto_id', produtoId)
-        if (vidUrls.length) {
-          await supabase.from('product_videos').insert(
-            vidUrls.map((url, i) => ({ produto_id: produtoId!, url, ordem: i }))
-          )
-        }
-
-        // Sync variations
-        await supabase.from('product_variations').delete().eq('produto_id', produtoId)
-        if (data.variacoes && data.variacoes.length > 0) {
-          for (const [vIndex, v] of data.variacoes.entries()) {
-            const { data: varData, error: varError } = await supabase.from('product_variations').insert({
-              produto_id: produtoId,
-              nome: v.nome,
-              ordem: vIndex
-            }).select().single()
-
-            if (varError) throw varError
-
-            if (varData && v.opcoes && v.opcoes.length > 0) {
-              for (const [oIndex, op] of v.opcoes.entries()) {
-                const { data: optData, error: optError } = await supabase.from('product_variation_options').insert({
-                  variation_id: varData.id,
-                  valor: op.valor,
-                  ordem: oIndex
-                }).select().single()
-
-                if (optError) throw optError
-
-                if (optData) {
-                  await supabase.from('product_stock_variations').insert({
-                    produto_id: produtoId,
-                    option_id: optData.id,
-                    estoque: op.estoque
-                  })
-                }
-              }
-            }
-          }
-        }
-      }
+      const { error } = await supabase.rpc('vibe_save_product', {
+        p_id: produto?.id ?? null,
+        p_expected_updated_at: produto?.atualizado_em ?? null,
+        p_data: payload,
+        p_images: imgUrls,
+        p_videos: vidUrls,
+        p_variations: variacoes || [],
+      })
+      if (error) throw error
 
       toast.success(isEdit ? 'Produto atualizado!' : 'Produto cadastrado!')
       router.push('/admin/produtos')
@@ -164,15 +142,6 @@ export function ProductForm({ produto }: Props) {
       toast.error(err.message || 'Erro ao salvar produto.')
     }
   }
-
-  const Section = ({ icon: Icon, title, children }: any) => (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-      <h2 className="font-display text-foreground text-lg tracking-widest flex items-center gap-2">
-        <Icon size={16} className="text-[var(--brand-primary)]" />{title}
-      </h2>
-      {children}
-    </div>
-  )
 
   const Input = ({ name, label, type = 'text', placeholder = '', step }: any) => (
     <div>
@@ -197,6 +166,9 @@ export function ProductForm({ produto }: Props) {
       </label>
     )} />
   )
+
+  if (loadError) return <p role="alert" className="p-6 text-red-700">Não foi possível carregar os dados do produto. Recarregue a página antes de editar.</p>
+  if (!loaded) return <p role="status" className="p-6">Carregando produto...</p>
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-3xl pb-10">
@@ -276,6 +248,7 @@ export function ProductForm({ produto }: Props) {
               <input {...register('preco_promocional', { valueAsNumber: true })} type="number" step="0.01" min="0" placeholder="0,00" className="form-input pl-9" />
             </div>
           </div>
+          {wVariacoes.length === 0 && <div><label htmlFor="estoque" className="form-label">Estoque disponível</label><input id="estoque" type="number" min="0" step="1" {...register('estoque', { valueAsNumber: true })} className="form-input" />{errors.estoque && <p className="form-error">{errors.estoque.message}</p>}</div>}
           <div className="sm:col-span-4">
             <div className="flex items-center justify-between mb-2">
               <label className="form-label mb-0">Controle de Estoque por Tamanho (Sapatos / Roupas)</label>
@@ -391,6 +364,7 @@ export function ProductForm({ produto }: Props) {
         <MediaUpload
           images={imgUrls} videos={vidUrls}
           onImagesChange={setImgUrls} onVideosChange={setVidUrls}
+          onUploadingChange={setMediaUploading}
         />
       </Section>
 
@@ -405,7 +379,7 @@ export function ProductForm({ produto }: Props) {
 
       {/* Submit */}
       <div className="flex gap-3">
-        <button type="submit" disabled={isSubmitting}
+        <button type="submit" disabled={isSubmitting || mediaUploading}
           className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-[var(--brand-button)] text-black font-display text-lg tracking-widest rounded-xl hover:opacity-90 disabled:opacity-60 transition-all shadow-neon-sm">
           {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
           {isSubmitting ? 'SALVANDO...' : isEdit ? 'ATUALIZAR' : 'CADASTRAR'}

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Instagram, Phone, Clock, MapPin, Heart, Target, Star } from 'lucide-react'
 
-export const metadata = { title: 'Sobre | MegaFort Suplementos' }
+export const metadata = { title: 'Sobre | VIBE FITNESS' }
 
 export default async function SobrePage() {
   const supabase = await createClient()
@@ -19,7 +19,7 @@ export default async function SobrePage() {
       <main className="min-h-screen pt-16">
         <div className="bg-surface-2 border-b border-border px-4 py-12 text-center">
           <span className="font-mono text-[var(--brand-primary)] text-xs tracking-[0.4em] uppercase">Conheça</span>
-          <h1 className="font-display text-foreground text-4xl md:text-6xl tracking-widest mt-1">MEGAFORT</h1>
+          <h1 className="font-display text-foreground text-4xl md:text-6xl tracking-widest mt-1">VIBE FITNESS</h1>
           <p className="font-body text-muted-foreground text-base mt-2">{cfg.slogan || 'A melhor loja de suplementos e moda da região'}</p>
         </div>
 
@@ -62,7 +62,7 @@ export default async function SobrePage() {
                 className="flex items-center justify-center gap-2 px-5 py-3 bg-green-500/10 border border-green-500/20 text-green-500 rounded-xl font-body font-semibold text-sm hover:bg-green-500/20 transition-colors">
                 <Phone size={15} /> WhatsApp
               </Link>
-              <Link href={cfg.instagram || 'https://www.instagram.com/megafort_suplementos'} target="_blank"
+              <Link href={'https://www.instagram.com/vibefit_oficial1/'} target="_blank"
                 className="flex items-center justify-center gap-2 px-5 py-3 bg-pink-500/10 border border-pink-500/20 text-pink-400 rounded-xl font-body font-semibold text-sm hover:bg-pink-500/20 transition-colors">
                 <Instagram size={15} /> Instagram
               </Link>

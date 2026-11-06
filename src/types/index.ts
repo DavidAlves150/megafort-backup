@@ -1,5 +1,5 @@
 // =====================================================
-// MegaFort Suplementos v2 — Global Types
+// VIBE FITNESS v2 — Global Types
 // =====================================================
 
 export interface Categoria {

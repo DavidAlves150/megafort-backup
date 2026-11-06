@@ -8,15 +8,15 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="font-display text-foreground text-2xl tracking-widest">MEGAFORT</div>
-            <div className="font-body text-[var(--brand-primary)] text-xs tracking-[0.3em] uppercase mt-0.5">Suplementos</div>
+            <img src="/logo-vibe-fitness.jpeg" alt="VIBE FITNESS — Seu Paraíso Fitness" className="mb-4 h-24 w-32 rounded-2xl object-contain bg-white" /><div className="font-display text-foreground text-2xl tracking-widest">VIBE FITNESS</div>
+            <div className="font-body text-[var(--brand-primary)] text-xs tracking-[0.3em] uppercase mt-0.5">Seu Paraíso Fitness</div>
             <p className="font-body text-muted-foreground text-sm mt-3 leading-relaxed">
               A melhor loja de suplementos e moda fitness de Santa Luzia do Paruá - MA.
             </p>
-            <Link href="https://www.instagram.com/megafort_suplementos" target="_blank"
+            <Link href="https://www.instagram.com/vibefit_oficial1" target="_blank"
               className="inline-flex items-center gap-2 mt-4 px-3 py-2 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-400 text-sm font-body font-semibold hover:bg-pink-500/20 transition-colors">
               <Instagram size={14} />
-              @megafort_suplementos
+              @vibefit_oficial1
             </Link>
           </div>
 
@@ -92,7 +92,7 @@ export function Footer() {
       <div className="border-t border-surface">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="font-body text-muted-foreground text-xs text-center">
-            © {new Date().getFullYear()} MegaFort Suplementos. Todos os direitos reservados.
+            © {new Date().getFullYear()} VIBE FITNESS. Todos os direitos reservados.
           </p>
           <p className="font-body text-muted-foreground text-xs">
             Vendas pelo <span className="text-green-500 font-semibold">WhatsApp</span>

@@ -4,12 +4,13 @@ export const produtoSchema = z.object({
   nome:              z.string().min(2, 'Mínimo 2 caracteres').max(200),
   descricao:         z.string().optional().default(''),
   descricao_curta:   z.string().max(500).optional().default(''),
-  preco_compra:      z.number({ invalid_type_error: 'Informe um valor' }).min(0, 'Valor inválido'),
-  preco_venda:       z.number({ invalid_type_error: 'Informe um valor' }).min(0.01, 'Preço de venda obrigatório'),
-  preco_promocional: z.number().nullable().optional(),
+  preco_compra:      z.number({ error: 'Informe um valor' }).min(0, 'Valor inválido'),
+  preco_venda:       z.number({ error: 'Informe um valor' }).min(0.01, 'Preço de venda obrigatório'),
+  preco_promocional: z.preprocess(v => typeof v === 'number' && Number.isNaN(v) ? null : v, z.number().positive('Preço promocional deve ser positivo').nullable().optional()),
   sku:               z.string().optional().default(''),
-  categoria_id:      z.string().uuid().nullable().optional(),
-  marca_id:          z.string().uuid().nullable().optional(),
+  estoque:           z.number().int().min(0, 'Estoque não pode ser negativo').default(0),
+  categoria_id:      z.preprocess(v => v === '' ? null : v, z.string().uuid().nullable().optional()),
+  marca_id:          z.preprocess(v => v === '' ? null : v, z.string().uuid().nullable().optional()),
   em_destaque:       z.boolean().default(false),
   em_promocao:       z.boolean().default(false),
   ativo:             z.boolean().default(true),
@@ -19,17 +20,17 @@ export const produtoSchema = z.object({
     opcoes: z.array(z.object({
       id: z.string().uuid().optional(),
       valor: z.string().min(1, 'Valor da opção obrigatório'),
-      estoque: z.number({ invalid_type_error: 'Informe a quantidade' }).int().min(0, 'Estoque não pode ser negativo'),
+      estoque: z.number({ error: 'Informe a quantidade' }).int().min(0, 'Estoque não pode ser negativo'),
     })).min(1, 'Adicione pelo menos uma opção de variação'),
   })).optional(),
-})
+}).refine(p => p.preco_promocional == null || p.preco_promocional < p.preco_venda, { message: 'A promoção deve ser menor que o preço de venda', path: ['preco_promocional'] })
 
 export const categoriaSchema = z.object({
   nome:      z.string().min(2, 'Nome obrigatório'),
   slug:      z.string().min(2).regex(/^[a-z0-9-]+$/, 'Slug inválido'),
   descricao: z.string().optional().default(''),
   imagem_url: z.string().url('URL de imagem inválida').nullable().optional(),
-  cor:       z.string().optional().default('#00FF41'),
+  cor:       z.string().optional().default('#F58FA9'),
   ordem:     z.number().int().default(0),
   ativa:     z.boolean().default(true),
 })
@@ -66,7 +67,7 @@ const variationSchema = z.object({
   opcoes: z.array(z.object({
     id: z.string().uuid().optional(),
     valor: z.string().min(1, 'Valor da opção obrigatório'),
-    estoque: z.number({ invalid_type_error: 'Informe a quantidade' }).int().min(0, 'Estoque não pode ser negativo'),
+    estoque: z.number({ error: 'Informe a quantidade' }).int().min(0, 'Estoque não pode ser negativo'),
   })).min(1, 'Adicione pelo menos uma opção de variação'),
 })
 
@@ -76,3 +77,5 @@ export type CategoriaSchema = z.infer<typeof categoriaSchema>
 export type MarcaSchema     = z.infer<typeof marcaSchema>
 export type BannerSchema    = z.infer<typeof bannerSchema>
 export type LoginSchema     = z.infer<typeof loginSchema>
+
+export type ProdutoInput = z.input<typeof produtoSchema>
