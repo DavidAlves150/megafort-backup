@@ -250,9 +250,10 @@ export default function CategoriasPage() {
 
             <div className="flex items-center gap-3">
               <label className="form-label mb-0">Ativa</label>
-              <button type="button" onClick={() => setForm({ ...form, ativa: !form.ativa })} aria-label="Alternar categoria ativa"
-                className={`relative h-7 w-12 rounded-full transition-all ${form.ativa ? 'bg-[var(--brand-primary)]' : 'border border-border bg-muted'}`}>
-                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${form.ativa ? 'translate-x-6' : 'translate-x-1'}`} />
+              <button type="button" role="switch" aria-label="Categoria ativa" aria-checked={form.ativa}
+                onClick={() => setForm(previous => ({ ...previous, ativa: !previous.ativa }))}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${form.ativa ? 'bg-[var(--brand-primary)]' : 'bg-muted ring-1 ring-inset ring-border'}`}>
+                <span aria-hidden="true" className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${form.ativa ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
             </div>
 

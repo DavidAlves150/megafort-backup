@@ -116,9 +116,10 @@ export default function MarcasPage() {
             ))}
             <div className="flex items-center gap-3">
               <label className="form-label mb-0">Ativa</label>
-              <button type="button" onClick={()=>setForm({...form,ativa:!form.ativa})}
-                className={`w-11 h-6 rounded-full transition-all relative ${form.ativa?'bg-[var(--brand-primary)]':'bg-muted border border-border'}`}>
-                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm ${form.ativa?'translate-x-5':'translate-x-0.5'}`}/>
+              <button type="button" role="switch" aria-label="Marca ativa" aria-checked={form.ativa}
+                onClick={() => setForm(previous => ({ ...previous, ativa: !previous.ativa }))}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${form.ativa ? 'bg-[var(--brand-primary)]' : 'bg-muted ring-1 ring-inset ring-border'}`}>
+                <span aria-hidden="true" className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${form.ativa ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
             </div>
             <div className="flex gap-3">

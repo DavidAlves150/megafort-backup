@@ -143,9 +143,10 @@ export default function BannersPage() {
             <div className="grid grid-cols-2 gap-3">
               <div><label className="form-label">Ordem</label><input type="number" value={form.ordem} onChange={e=>setForm({...form,ordem:Number(e.target.value)})} className="form-input"/></div>
               <div className="flex items-end pb-2 gap-3"><label className="form-label mb-0">Ativo</label>
-                <button type="button" onClick={()=>setForm({...form,ativo:!form.ativo})}
-                  className={`w-11 h-6 rounded-full transition-all relative ${form.ativo?'bg-[var(--brand-primary)]':'bg-muted border border-border'}`}>
-                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm ${form.ativo?'translate-x-5':'translate-x-0.5'}`}/>
+                <button type="button" role="switch" aria-label="Banner ativo" aria-checked={form.ativo}
+                  onClick={() => setForm(previous => ({ ...previous, ativo: !previous.ativo }))}
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${form.ativo ? 'bg-[var(--brand-primary)]' : 'bg-muted ring-1 ring-inset ring-border'}`}>
+                  <span aria-hidden="true" className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${form.ativo ? 'translate-x-5' : 'translate-x-0'}`} />
                 </button>
               </div>
             </div>
