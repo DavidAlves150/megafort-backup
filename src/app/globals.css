@@ -3,15 +3,15 @@
 @tailwind utilities;
 
 /* =====================================================
-   MegaFort Suplementos v2 — Global Styles
+   VIBE FITNESS v2 — Global Styles
    Google Fonts carregado via <link> no layout.tsx
    ===================================================== */
 
 /* ─── Light Mode ─── */
 :root {
-  --brand-primary:   #00FF41;
-  --brand-secondary: #000000;
-  --brand-button:    #00FF41;
+  --brand-primary:   #A51C53;
+  --brand-secondary: #FFF1F5;
+  --brand-button:    #FF1493;
 
   --background: 0 0% 100%;
   --foreground: 0 0% 4%;
@@ -19,7 +19,7 @@
   --card-foreground: 0 0% 4%;
   --popover:    0 0% 100%;
   --popover-foreground: 0 0% 4%;
-  --primary:    138 100% 50%;
+  --primary:    336 71% 38%;
   --primary-foreground: 0 0% 4%;
   --secondary:  0 0% 92%;
   --secondary-foreground: 0 0% 15%;
@@ -31,7 +31,7 @@
   --destructive-foreground: 0 0% 98%;
   --border:     0 0% 88%;
   --input:      0 0% 88%;
-  --ring:       138 100% 50%;
+  --ring:       336 71% 38%;
   --radius:     0.5rem;
 
   --font-display: 'Bebas Neue';
@@ -47,7 +47,7 @@
   --card-foreground: 0 0% 98%;
   --popover:    0 0% 7%;
   --popover-foreground: 0 0% 98%;
-  --primary:    138 100% 50%;
+  --primary:    336 71% 38%;
   --primary-foreground: 0 0% 4%;
   --secondary:  0 0% 13%;
   --secondary-foreground: 0 0% 98%;
@@ -59,7 +59,7 @@
   --destructive-foreground: 0 0% 98%;
   --border:     0 0% 18%;
   --input:      0 0% 18%;
-  --ring:       138 100% 50%;
+  --ring:       336 71% 38%;
 }
 
 /* =====================================================
@@ -154,7 +154,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .product-card:hover {
-  @apply border-primary/30 shadow-[0_8px_30px_rgba(0,0,0,0.15),0_0_15px_rgba(0,255,65,0.08)] -translate-y-1;
+  @apply border-primary/30 shadow-[0_8px_30px_rgba(0,0,0,0.15),0_0_15px_rgba(245,143,169,0.08)] -translate-y-1;
 }
 
 /* =====================================================
@@ -173,8 +173,8 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes fadeUp    { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slideUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes pulseNeon {
-  0%, 100% { box-shadow: 0 0 20px rgba(0,255,65,0.4); }
-  50%       { box-shadow: 0 0 40px rgba(0,255,65,0.8), 0 0 80px rgba(0,255,65,0.3); }
+  0%, 100% { box-shadow: 0 0 20px rgba(245,143,169,0.4); }
+  50%       { box-shadow: 0 0 40px rgba(245,143,169,0.8), 0 0 80px rgba(245,143,169,0.3); }
 }
 
 /* =====================================================
@@ -199,6 +199,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .wa-float:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(37,211,102,0.7); }
+body.homologacao { padding-bottom: 64px; }
+body.homologacao .wa-float { bottom: 88px; }
 
 @media (min-width: 768px) {
   .wa-float { width: 64px; height: 64px; bottom: 28px; right: 28px; }
@@ -271,3 +273,19 @@ h1, h2, h3, h4, h5, h6 {
 .text-primary-content { @apply text-gray-900 dark:text-white; }
 .text-secondary-content { @apply text-gray-600 dark:text-gray-400; }
 .border-surface { @apply border-gray-200 dark:border-white/10; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:focus-visible { outline: 3px solid #a50c59; outline-offset: 3px; }
+
+/* V2: quiet surfaces, stronger contrast, generous touch targets. */
+:root { --card: 0 0% 100%; --background: 340 100% 99%; --border: 337 32% 89%; --muted-foreground: 330 10% 36%; --font-body: 'Inter'; --font-display: 'Inter'; }
+html { font-family: 'Inter', sans-serif; }
+.font-display { font-weight: 700; letter-spacing: -0.025em; }
+.admin-nav-link.active { background: #FFF1F5; color: #941348; border-color: #FF1493; }
+.product-card { box-shadow: 0 4px 24px rgba(82,21,47,.04); }
+.form-input { min-height: 48px; }
+
+.form-input.pl-10 { padding-left: 2.5rem; }
+.form-input.pr-11 { padding-right: 2.75rem; }

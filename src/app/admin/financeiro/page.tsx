@@ -5,6 +5,8 @@ import { ArrowDownCircle, CalendarDays, DollarSign, Loader2, Plus, ReceiptText, 
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { readAll } from '@/lib/read-all'
+import { storeDate } from '@/lib/store-date'
 
 type Venda = {
   id: string
@@ -28,7 +30,7 @@ type Despesa = {
 }
 
 const CATEGORIAS_DESPESA = ['Aluguel', 'Água', 'Energia', 'Internet', 'Marketing', 'Frete', 'Impostos', 'Embalagens', 'Serviços', 'Outros']
-const initialExpense = { descricao: '', categoria: 'Outros', valor: '', data_despesa: new Date().toISOString().slice(0, 10), recorrente: false, observacoes: '' }
+const initialExpense = () => ({ descricao: '', categoria: 'Outros', valor: '', data_despesa: storeDate(), recorrente: false, observacoes: '' })
 
 function numberValue(value: number | string | null | undefined) {
   return Number(value) || 0
@@ -38,6 +40,7 @@ export default function FinanceiroPage() {
   const [vendas, setVendas] = useState<Venda[]>([])
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expenseForm, setExpenseForm] = useState(initialExpense)
@@ -45,21 +48,28 @@ export default function FinanceiroPage() {
 
   const period = useMemo(() => {
     const now = new Date()
-    const start = new Date(now.getFullYear(), now.getMonth(), 1)
+    const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit' }).formatToParts(now)
+    const year = Number(date.find(p => p.type === 'year')!.value)
+    const month = Number(date.find(p => p.type === 'month')!.value)
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+    const endDate = `${month === 12 ? year + 1 : year}-${String(month === 12 ? 1 : month + 1).padStart(2, '0')}-01`
     return {
-      startSales: start.toISOString(),
-      startExpense: start.toISOString().slice(0, 10),
-      label: now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+      startSales: `${startDate}T00:00:00-03:00`,
+      endSales: `${endDate}T00:00:00-03:00`,
+      endExpense: endDate,
+      startExpense: startDate,
+      label: now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' }),
     }
   }, [])
 
   async function load() {
     setLoading(true)
     const [{ data: salesData, error: salesError }, { data: expenseData, error: expenseError }] = await Promise.all([
-      supabase.from('vendas').select('id,quantidade,valor_venda,valor_custo,lucro_real,canal_venda,data_venda,produto:produtos(nome)').gte('data_venda', period.startSales).order('data_venda', { ascending: false }),
-      supabase.from('despesas').select('id,descricao,categoria,valor,data_despesa,recorrente,observacoes').gte('data_despesa', period.startExpense).order('data_despesa', { ascending: false }),
+      readAll((from, to) => supabase.from('vendas').select('id,quantidade,valor_venda,valor_custo,lucro_real,canal_venda,data_venda,produto:produtos(nome)').gte('data_venda', period.startSales).lt('data_venda', period.endSales).order('data_venda', { ascending: false }).order('id').range(from, to)),
+      readAll((from, to) => supabase.from('despesas').select('id,descricao,categoria,valor,data_despesa,recorrente,observacoes').gte('data_despesa', period.startExpense).lt('data_despesa', period.endExpense).order('data_despesa', { ascending: false }).order('id').range(from, to)),
     ])
 
+    setLoadError(!!(salesError || expenseError))
     if (salesError) toast.error(`Vendas: ${salesError.message}`)
     if (expenseError) toast.error(`Despesas: ${expenseError.message}`)
     setVendas((salesData || []) as Venda[])
@@ -74,8 +84,8 @@ export default function FinanceiroPage() {
     const custoMercadorias = vendas.reduce((total, sale) => total + numberValue(sale.valor_custo) * sale.quantidade, 0)
     const lucroBruto = faturamento - custoMercadorias
     const totalDespesas = despesas.reduce((total, expense) => total + numberValue(expense.valor), 0)
-    // Saldo líquido representa entradas de vendas menos despesas pagas no período.
-    // Lucro líquido também desconta o custo das mercadorias vendidas.
+    // Receita menos despesas representa entradas de vendas menos despesas registradas no período.
+    // Resultado operacional também desconta o custo das mercadorias vendidas.
     const saldoLiquido = faturamento - totalDespesas
     const lucroLiquido = lucroBruto - totalDespesas
     return { faturamento, custoMercadorias, lucroBruto, totalDespesas, saldoLiquido, lucroLiquido }
@@ -134,8 +144,8 @@ export default function FinanceiroPage() {
     { title: 'Custo das mercadorias', value: indicadores.custoMercadorias, icon: ReceiptText, color: 'text-orange-400', background: 'bg-orange-400/10' },
     { title: 'Lucro bruto', value: indicadores.lucroBruto, icon: DollarSign, color: 'text-[var(--brand-primary)]', background: 'bg-[var(--brand-primary)]/10' },
     { title: 'Despesas operacionais', value: indicadores.totalDespesas, icon: ArrowDownCircle, color: 'text-red-400', background: 'bg-red-400/10' },
-    { title: 'Saldo líquido', value: indicadores.saldoLiquido, icon: Wallet, color: indicadores.saldoLiquido >= 0 ? 'text-violet-400' : 'text-red-400', background: indicadores.saldoLiquido >= 0 ? 'bg-violet-400/10' : 'bg-red-400/10' },
-    { title: 'Lucro líquido', value: indicadores.lucroLiquido, icon: DollarSign, color: indicadores.lucroLiquido >= 0 ? 'text-emerald-400' : 'text-red-400', background: indicadores.lucroLiquido >= 0 ? 'bg-emerald-400/10' : 'bg-red-400/10' },
+    { title: 'Receita menos despesas', value: indicadores.saldoLiquido, icon: Wallet, color: indicadores.saldoLiquido >= 0 ? 'text-violet-400' : 'text-red-400', background: indicadores.saldoLiquido >= 0 ? 'bg-violet-400/10' : 'bg-red-400/10' },
+    { title: 'Resultado operacional', value: indicadores.lucroLiquido, icon: DollarSign, color: indicadores.lucroLiquido >= 0 ? 'text-emerald-400' : 'text-red-400', background: indicadores.lucroLiquido >= 0 ? 'bg-emerald-400/10' : 'bg-red-400/10' },
   ]
 
   return (
@@ -152,10 +162,10 @@ export default function FinanceiroPage() {
 
       <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 font-body text-xs text-muted-foreground">
         <CalendarDays size={14} className="text-[var(--brand-primary)]" />
-        Saldo líquido = faturamento − despesas. Lucro líquido = faturamento − custo das mercadorias − despesas.
+        Valores dos registros; não representam saldo de caixa. Receita menos despesas = faturamento − despesas. Resultado operacional = faturamento − custo das mercadorias − despesas.
       </div>
 
-      {loading ? (
+      {loadError ? <p role="alert">Não foi possível carregar o período completo. <button onClick={load}>Tentar novamente</button></p> : loading ? (
         <div className="flex h-48 items-center justify-center"><Loader2 size={28} className="animate-spin text-[var(--brand-primary)]" /></div>
       ) : (
         <>

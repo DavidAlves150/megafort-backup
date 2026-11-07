@@ -1,5 +1,5 @@
 // =====================================================
-// MegaFort Suplementos v2 — Global Types
+// VIBE FITNESS v2 — Global Types
 // =====================================================
 
 export interface Categoria {
@@ -70,6 +70,8 @@ export interface Produto {
   criado_em: string
   atualizado_em: string
 }
+
+export type ProdutoPublico = Omit<Produto, 'preco_compra'>
 
 export interface ProdutoComMidia extends Produto {
   imagens: ProductImage[]

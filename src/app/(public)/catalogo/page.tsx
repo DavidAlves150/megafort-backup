@@ -10,7 +10,7 @@ import { WhatsAppButton } from '@/components/layout/WhatsAppButton'
 import { ProductCard } from '@/components/products/ProductCard'
 import { ProductSkeleton } from '@/components/products/ProductSkeleton'
 import { createClient } from '@/lib/supabase/client'
-import { Produto, Categoria, Marca } from '@/types'
+import { ProdutoPublico as Produto, Categoria, Marca } from '@/types'
 import { cn } from '@/lib/utils'
 
 const CATALOG_PRODUCT_SELECT = `
@@ -34,7 +34,11 @@ function CatalogContent() {
   const [marcaSlug, setMarcaSlug] = useState(searchParams.get('marca') || '')
   const [soPromo, setSoPromo] = useState(searchParams.get('promocao') === 'true')
   const [soDestaque, setSoDestaque] = useState(searchParams.get('destaque') === 'true')
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [error, setError] = useState(false)
   const requestId = useRef(0)
+  useEffect(() => { setPage(0) }, [busca, catSlug, marcaSlug, soPromo, soDestaque])
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -65,10 +69,10 @@ function CatalogContent() {
 
     let query = supabase
       .from('produtos')
-      .select(CATALOG_PRODUCT_SELECT)
+      .select(CATALOG_PRODUCT_SELECT, { count: 'exact' })
       .eq('ativo', true)
       .order('criado_em', { ascending: false })
-      .limit(48)
+      .order('id').range(page * 48, page * 48 + 47)
 
     if (busca.trim()) query = query.ilike('nome', `%${busca.trim()}%`)
     if (soPromo) query = query.eq('em_promocao', true)
@@ -76,12 +80,14 @@ function CatalogContent() {
     if (categoryId) query = query.eq('categoria_id', categoryId)
     if (brandId) query = query.eq('marca_id', brandId)
 
-    const { data } = await query
+    const { data, count, error: queryError } = await query
     if (currentRequest !== requestId.current) return
 
+    setError(!!queryError)
+    setTotal(count || 0)
     setProdutos((data || []) as unknown as Produto[])
     setLoading(false)
-  }, [busca, catSlug, categorias, marcaSlug, marcas, soDestaque, soPromo, supabase])
+  }, [busca, catSlug, categorias, marcaSlug, marcas, soDestaque, soPromo, supabase, page])
 
   useEffect(() => {
     if (!filtersReady) return
@@ -106,7 +112,7 @@ function CatalogContent() {
               {catLabel ? catLabel.toUpperCase() : marcaLabel ? marcaLabel.toUpperCase() : soPromo ? 'PROMOÇÕES' : 'CATÁLOGO'}
             </h1>
             <p className="mt-1 font-body text-sm text-muted-foreground">
-              {loading ? 'Carregando...' : `${produtos.length} produto(s) encontrado(s)`}
+              {loading ? 'Carregando...' : `${total} produto(s) encontrado(s)`}
             </p>
           </div>
         </div>
@@ -176,7 +182,7 @@ function CatalogContent() {
             </div>
           )}
 
-          {loading ? <ProductSkeleton count={8} /> : produtos.length === 0 ? (
+          {error ? <p role="alert">Não foi possível carregar o catálogo. <button onClick={loadProdutos}>Tentar novamente</button></p> : loading ? <ProductSkeleton count={8} /> : produtos.length === 0 ? (
             <div className="py-20 text-center">
               <Filter size={40} className="mx-auto mb-3 text-muted-foreground/30" />
               <p className="font-body text-lg text-muted-foreground">Nenhum produto encontrado.</p>
@@ -188,6 +194,11 @@ function CatalogContent() {
             </div>
           )}
         </div>
+          {!loading && !error && total > 48 && <nav aria-label="Páginas do catálogo" className="flex justify-center items-center gap-4 pb-8">
+            <button className="min-h-11 rounded-xl border px-4 disabled:opacity-40" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</button>
+            <span>Página {page + 1} de {Math.ceil(total / 48)}</span>
+            <button className="min-h-11 rounded-xl border px-4 disabled:opacity-40" disabled={(page + 1) * 48 >= total} onClick={() => setPage(p => p + 1)}>Próxima</button>
+          </nav>}
       </main>
       <Footer />
       <WhatsAppButton />

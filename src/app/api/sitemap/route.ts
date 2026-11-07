@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
   const supabase = await createClient()
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://megafort.netlify.app'
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://vibefitslp.netlify.app'
 
   const [{ data: produtos }, { data: categorias }, { data: marcas }] = await Promise.all([
     supabase.from('produtos').select('slug,atualizado_em').eq('ativo', true),

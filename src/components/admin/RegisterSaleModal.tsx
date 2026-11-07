@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ShoppingCart, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -19,6 +19,7 @@ interface RegisterSaleModalProps {
 
 const initialForm = {
   produto_id: '',
+  option_id: '',
   quantidade: 1,
   valor_venda: 0,
   valor_custo: 0,
@@ -30,7 +31,30 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState(initialForm)
+  const saleId = useRef('')
+  const saving = useRef(false)
+  const [options, setOptions] = useState<{ id: string; label: string; estoque: number }[]>([])
+  const [optionsLoading, setOptionsLoading] = useState(false)
+  const [optionsError, setOptionsError] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    let active = true
+    setOptions([])
+    setOptionsError(false)
+    if (!formData.produto_id) { setOptionsLoading(false); return }
+    setOptionsLoading(true)
+    supabase.from('product_stock_variations')
+      .select('option_id,estoque,option:product_variation_options(valor,variation:product_variations(nome))')
+      .eq('produto_id', formData.produto_id)
+      .then(({ data, error }) => {
+        if (!active) return
+        setOptionsError(!!error)
+        setOptions((data || []).map((s: any) => ({ id: s.option_id, estoque: s.estoque, label: `${s.option?.variation?.nome}: ${s.option?.valor}` })))
+        setOptionsLoading(false)
+      })
+    return () => { active = false }
+  }, [formData.produto_id])
 
   function close() {
     if (!loading) setOpen(false)
@@ -41,6 +65,7 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
     setFormData(current => ({
       ...current,
       produto_id: id,
+      option_id: '',
       valor_venda: product ? Number(product.preco_venda) || 0 : 0,
       valor_custo: product ? Number(product.preco_compra) || 0 : 0,
     }))
@@ -48,19 +73,24 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (saving.current || optionsLoading || optionsError) return
     if (!formData.produto_id) {
       toast.error('Selecione um produto.')
       return
     }
-    if (formData.quantidade < 1 || formData.valor_venda < 0 || formData.valor_custo < 0) {
+    if (!Number.isInteger(formData.quantidade) || formData.quantidade < 1 || !Number.isFinite(formData.valor_venda) || !Number.isFinite(formData.valor_custo) || formData.valor_venda < 0 || formData.valor_custo < 0) {
       toast.error('Confira quantidade, preço de venda e custo.')
       return
     }
 
+    if (options.length > 0 && !formData.option_id) { toast.error('Selecione a variação.'); return }
+    saving.current = true
     setLoading(true)
     try {
       const { error } = await supabase.from('vendas').insert({
+        id: saleId.current,
         produto_id: formData.produto_id,
+        option_id: formData.option_id || null,
         quantidade: formData.quantidade,
         valor_venda: formData.valor_venda,
         valor_custo: formData.valor_custo,
@@ -69,7 +99,7 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
         data_venda: new Date().toISOString(),
         lucro_real: (formData.valor_venda - formData.valor_custo) * formData.quantidade,
       })
-      if (error) throw error
+      if (error && error.code !== '23505') throw error
 
       toast.success('Venda registrada nos Relatórios de Vendas.')
       setFormData(initialForm)
@@ -78,6 +108,7 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
     } catch (error: any) {
       toast.error(error?.message || 'Não foi possível registrar a venda.')
     } finally {
+      saving.current = false
       setLoading(false)
     }
   }
@@ -89,7 +120,7 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => { saleId.current = crypto.randomUUID(); setFormData(initialForm); setOpen(true) }}
         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-2.5 font-display text-xs tracking-widest text-black transition hover:opacity-90"
       >
         <ShoppingCart size={15} /> REGISTRAR VENDA
@@ -101,7 +132,7 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <h2 className="font-display text-xl tracking-widest text-foreground">NOVA VENDA</h2>
-                <p className="font-body text-sm text-muted-foreground">O registro ficará em Relatórios e Vendas.</p>
+                <p className="font-body text-sm text-muted-foreground">A confirmação registra a venda e baixa o estoque.</p>
               </div>
               <button type="button" onClick={close} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition hover:text-foreground" aria-label="Fechar">
                 <X size={18} />
@@ -109,6 +140,7 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <fieldset disabled={loading} className="space-y-4">
               <div>
                 <label className={labelClass}>Produto</label>
                 <select className={fieldClass} onChange={event => handleProductChange(event.target.value)} value={formData.produto_id}>
@@ -116,6 +148,16 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
                   {products.map(product => <option key={product.id} value={product.id}>{product.nome}</option>)}
                 </select>
               </div>
+
+              {optionsLoading && <p role="status">Carregando variações...</p>}
+              {optionsError && <p role="alert" className="text-red-700">Não foi possível carregar as variações. Selecione o produto novamente.</p>}
+              {options.length > 0 && <div>
+                <label htmlFor="sale-option" className={labelClass}>Variação</label>
+                <select id="sale-option" required className={fieldClass} value={formData.option_id} onChange={event => setFormData({ ...formData, option_id: event.target.value })}>
+                  <option value="">Selecione a variação</option>
+                  {options.map(option => <option key={option.id} value={option.id} disabled={option.estoque < 1}>{option.label} — {option.estoque} disponíveis</option>)}
+                </select>
+              </div>}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
@@ -146,10 +188,11 @@ export default function RegisterSaleModal({ products, onSaved }: RegisterSaleMod
                 <textarea className={`${fieldClass} min-h-20 resize-y`} value={formData.observacoes} onChange={event => setFormData({ ...formData, observacoes: event.target.value })} placeholder="Opcional" />
               </div>
 
-              <button type="submit" disabled={loading} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-3 font-display text-sm tracking-widest text-black transition hover:opacity-90 disabled:opacity-60">
+              <button type="submit" disabled={loading || optionsLoading || optionsError} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-button)] px-4 py-3 font-display text-sm tracking-widest text-black transition hover:opacity-90 disabled:opacity-60">
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <ShoppingCart size={18} />}
                 {loading ? 'SALVANDO...' : 'CONFIRMAR VENDA'}
               </button>
+              </fieldset>
             </form>
           </div>
         </div>

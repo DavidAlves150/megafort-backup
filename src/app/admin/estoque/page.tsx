@@ -6,36 +6,31 @@ import { AlertTriangle, Package, Edit, Loader2, TrendingDown } from 'lucide-reac
 import { createClient } from '@/lib/supabase/client'
 import { Produto, getEstoqueStatus } from '@/types'
 import { formatCurrency, cn } from '@/lib/utils'
+import { readAll } from '@/lib/read-all'
+import toast from 'react-hot-toast'
 import { StockBadge } from '@/components/products/StockBadge'
 
 export default function EstoquePage() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'todos'|'esgotados'|'baixo'|'urgente'>('todos')
-  const [editId, setEditId] = useState<string|null>(null)
-  const [novoEstoque, setNovoEstoque] = useState(0)
-  const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
   useEffect(()=>{ load() },[])
 
   async function load() {
-    const { data } = await supabase.from('produtos')
+    const { data, error } = await readAll((from, to) => supabase.from('produtos')
       .select('*, categoria:categorias(nome), marca:marcas(nome), imagens:product_images(url,is_principal)')
-      .eq('ativo', true).order('estoque', { ascending: true }).limit(200)
+      .eq('ativo', true).order('estoque', { ascending: true }).order('id').range(from, to))
+    if (error) { toast.error('Não foi possível carregar o estoque.'); setLoading(false); return }
     setProdutos((data||[]) as any); setLoading(false)
   }
 
-  async function saveEstoque(id:string) {
-    setSaving(true)
-    await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', id)
-    setEditId(null); load(); setSaving(false)
-  }
-
   const filtered = produtos.filter(p => {
-    const s = getEstoqueStatus(p.estoque)
     if (filter==='todos') return true
-    return s === filter
+    if (filter==='esgotados') return p.estoque <= 0
+    if (filter==='urgente') return p.estoque > 0 && p.estoque <= 2
+    return p.estoque > 0 && p.estoque <= 5
   })
 
   const counts = {
@@ -97,26 +92,8 @@ export default function EstoquePage() {
                     <StockBadge estoque={p.estoque} showCount size="sm"/>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {editId===p.id ? (
-                      <>
-                        <input type="number" min="0" value={novoEstoque} onChange={e=>setNovoEstoque(Number(e.target.value))}
-                          className="w-16 form-input text-center py-1.5 text-sm h-8"/>
-                        <button onClick={()=>saveEstoque(p.id)} disabled={saving}
-                          className="px-3 h-8 bg-[var(--brand-primary)] text-black font-display text-xs tracking-widest rounded-lg hover:opacity-90 disabled:opacity-60 transition-all">
-                          {saving?'...':'OK'}
-                        </button>
-                        <button onClick={()=>setEditId(null)} className="px-3 h-8 bg-muted border border-border text-muted-foreground font-display text-xs rounded-lg">✕</button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-mono text-foreground text-sm font-bold">{p.estoque}</span>
-                        <button onClick={()=>{ setEditId(p.id); setNovoEstoque(p.estoque) }}
-                          className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center text-muted-foreground hover:text-[var(--brand-primary)] transition-colors">
-                          <Edit size={12}/>
-                        </button>
-                      </>
-                    )}
-                    <Link href={`/admin/produtos/${p.id}`} className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center text-muted-foreground hover:text-[var(--brand-primary)] transition-colors">
+                    <span className="font-mono text-foreground text-sm font-bold">{p.estoque}</span>
+                    <Link href={`/admin/produtos/${p.id}`} aria-label={`Editar estoque de ${p.nome}`} className="w-11 h-11 bg-muted rounded-lg flex items-center justify-center text-muted-foreground hover:text-[var(--brand-primary)] transition-colors">
                       <TrendingDown size={12}/>
                     </Link>
                   </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { PUBLIC_PRODUCT_FIELDS } from '@/lib/public-product'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -12,7 +13,7 @@ import { WhatsAppButton } from '@/components/layout/WhatsAppButton'
 import { StockBadge } from '@/components/products/StockBadge'
 import { ProductCard } from '@/components/products/ProductCard'
 import { createClient } from '@/lib/supabase/client'
-import { Produto, getEstoqueStatus } from '@/types'
+import { ProdutoPublico as Produto, getEstoqueStatus } from '@/types'
 import { formatCurrency, getPrecoAtual, isNovidade, cn } from '@/lib/utils'
 import { trackAndOpenWhatsApp } from '@/lib/utils/whatsapp'
 
@@ -33,7 +34,7 @@ export default function ProdutoPage() {
   async function load() {
     const { data } = await supabase
       .from('produtos')
-      .select('*, categoria:categorias(*), marca:marcas(*), imagens:product_images(url,ordem,is_principal), videos:product_videos(url,thumbnail_url,tipo,ordem)')
+      .select(`${PUBLIC_PRODUCT_FIELDS}, categoria:categorias(*), marca:marcas(*), imagens:product_images(url,ordem,is_principal), videos:product_videos(url,thumbnail_url,tipo,ordem)`)
       .eq('slug', slug).eq('ativo', true).single()
 
     if (data) {
@@ -45,7 +46,7 @@ export default function ProdutoPage() {
       if (data.categoria_id) {
         const { data: rel } = await supabase
           .from('produtos')
-          .select('*, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)')
+          .select(`${PUBLIC_PRODUCT_FIELDS}, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)`)
           .eq('ativo', true).eq('categoria_id', data.categoria_id)
           .neq('id', data.id).limit(4)
         setRelated((rel || []) as unknown as Produto[])

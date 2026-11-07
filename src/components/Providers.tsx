@@ -24,7 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             fontFamily: 'Rajdhani, sans-serif',
             fontSize: '15px',
           },
-          success: { iconTheme: { primary: '#00FF41', secondary: '#000' } },
+          success: { iconTheme: { primary: '#F58FA9', secondary: '#000' } },
         }}
       />
     </QueryClientProvider>

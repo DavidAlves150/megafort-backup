@@ -50,7 +50,8 @@ export default function MarcasPage() {
 
   async function remove(m:Marca) {
     if (!confirm(`Excluir "${m.nome}"?`)) return
-    await supabase.from('marcas').delete().eq('id', m.id)
+    const { error } = await supabase.from('marcas').delete().eq('id', m.id)
+    if (error) { toast.error(error.message); return }
     toast.success('Excluída!'); load()
   }
 

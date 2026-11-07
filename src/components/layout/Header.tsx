@@ -47,12 +47,10 @@ export function Header() {
         <div className="max-w-7xl mx-auto px-4 h-14 md:h-16 flex items-center justify-between gap-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[var(--brand-primary)] flex items-center justify-center flex-shrink-0">
-              <span className="font-display text-black text-sm leading-none">MF</span>
-            </div>
+            <img src="/logo-vibe-fitness.jpeg" alt="VIBE FITNESS — Seu Paraíso Fitness" className="h-12 w-16 object-contain rounded-lg" />
             <div className="hidden xs:block min-w-0">
-              <div className="font-display text-foreground text-base tracking-widest leading-none truncate">MEGAFORT</div>
-              <div className="font-body text-[var(--brand-primary)] text-[9px] tracking-[0.3em] uppercase leading-none mt-0.5">Suplementos</div>
+              <div className="font-display text-foreground text-base tracking-widest leading-none truncate">VIBE FITNESS</div>
+              <div className="font-body text-[var(--brand-primary)] text-[9px] tracking-[0.3em] uppercase leading-none mt-0.5">Seu Paraíso Fitness</div>
             </div>
           </Link>
 
@@ -92,7 +90,7 @@ export function Header() {
               </button>
             )}
 
-            <Link href="https://www.instagram.com/megafort_suplementos" target="_blank" rel="noopener"
+            <Link href="https://www.instagram.com/vibefit_oficial1" target="_blank" rel="noopener"
               className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground transition-colors">
               <Instagram size={16} />
             </Link>
@@ -123,7 +121,7 @@ export function Header() {
             >
               <div className="flex items-center justify-between p-5 border-b border-border">
                 <div>
-                  <div className="font-display text-foreground text-xl tracking-widest">MEGAFORT</div>
+                  <div className="font-display text-foreground text-xl tracking-widest">VIBE FITNESS</div>
                   <div className="font-body text-[var(--brand-primary)] text-xs tracking-[0.3em] uppercase">Suplementos</div>
                 </div>
                 <button onClick={() => setMobileOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-muted">
@@ -150,11 +148,11 @@ export function Header() {
               </nav>
 
               <div className="p-4 border-t border-border space-y-2">
-                <Link href="https://wa.me/5598885916645" target="_blank"
+                <Link href="https://wa.me/5598985916645" target="_blank"
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-500 font-body font-semibold text-sm">
                   <WaIcon /> WhatsApp
                 </Link>
-                <Link href="https://www.instagram.com/megafort_suplementos" target="_blank"
+                <Link href="https://www.instagram.com/vibefit_oficial1" target="_blank"
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 font-body font-semibold text-sm">
                   <Instagram size={16} /> Instagram
                 </Link>

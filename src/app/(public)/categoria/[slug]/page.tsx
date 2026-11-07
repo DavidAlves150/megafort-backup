@@ -1,3 +1,4 @@
+import { PUBLIC_PRODUCT_FIELDS } from '@/lib/public-product'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -11,7 +12,7 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
   const { data } = await supabase.from('categorias').select('nome,descricao').eq('slug', slug).single()
-  return { title: data ? `${data.nome} | MegaFort Suplementos` : 'Categoria | MegaFort' }
+  return { title: data ? `${data.nome} | VIBE FITNESS` : 'Categoria | VIBE FITNESS' }
 }
 
 export default async function CategoriaPage({ params }: Props) {
@@ -22,7 +23,7 @@ export default async function CategoriaPage({ params }: Props) {
   if (!cat) notFound()
 
   const { data: produtos } = await supabase.from('produtos')
-    .select('*, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)')
+    .select(`${PUBLIC_PRODUCT_FIELDS}, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)`)
     .eq('ativo', true).eq('categoria_id', cat.id)
     .order('criado_em', { ascending: false }).limit(60)
 

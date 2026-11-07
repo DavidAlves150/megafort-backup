@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const Sidebar = ({ onClick }: { onClick?: () => void }) => (
     <div className="flex flex-col h-full">
       <div className="p-5 border-b border-border">
-        <div className="font-display text-foreground text-xl tracking-widest">MEGAFORT</div>
+        <img src="/logo-vibe-fitness.jpeg" alt="VIBE FITNESS — Seu Paraíso Fitness" className="mb-4 h-24 w-32 rounded-2xl object-contain bg-white" /><div className="font-display text-foreground text-xl tracking-widest">VIBE FITNESS</div>
         <div className="font-body text-[var(--brand-primary)] text-[10px] tracking-[0.35em] uppercase mt-0.5">Painel Admin</div>
       </div>
 
@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               initial={{ x: -260 }} animate={{ x: 0 }} exit={{ x: -260 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
               className="fixed inset-y-0 left-0 z-50 w-[min(18rem,88vw)] bg-card border-r border-border lg:hidden">
-              <Sidebar onClick={() => setOpen(false)} />
+              <button onClick={() => setOpen(false)} className="absolute right-3 top-3 p-3" aria-label="Fechar menu"><X size={20} /></button><Sidebar onClick={() => setOpen(false)} />
             </motion.aside>
           </>
         )}

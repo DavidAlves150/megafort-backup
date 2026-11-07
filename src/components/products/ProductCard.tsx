@@ -4,8 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { Heart, ShoppingBag, Play } from 'lucide-react'
-import { Produto } from '@/types'
+import { ShoppingBag, Play } from 'lucide-react'
+import { ProdutoPublico as Produto } from '@/types'
 import { cn, formatCurrency, getPrecoAtual, getEstoqueStatus, isNovidade } from '@/lib/utils'
 import { trackAndOpenWhatsApp } from '@/lib/utils/whatsapp'
 import { StockBadge } from './StockBadge'
@@ -94,15 +94,6 @@ export function ProductCard({ produto, index = 0 }: ProductCardProps) {
               <Play size={10} className="text-white fill-white ml-0.5" />
             </div>
           )}
-
-          {/* Like button */}
-          <button
-            onClick={e => { e.preventDefault(); setLiked(!liked) }}
-            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm border border-white/10 transition-all"
-            aria-label="Favoritar"
-          >
-            <Heart size={12} className={cn(liked ? 'fill-red-500 text-red-500' : 'text-white/80')} />
-          </button>
 
           {/* Image dots */}
           {imagens.length > 1 && (

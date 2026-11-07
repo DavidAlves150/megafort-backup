@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { isAdministrator } from '@/lib/admin-access'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -24,11 +25,11 @@ export async function middleware(request: NextRequest) {
 
   // Protege /admin/* (exceto /admin/login)
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    if (!user) return NextResponse.redirect(new URL('/admin/login', request.url))
+    if (!isAdministrator(user)) return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
   // Redireciona usuário logado que tenta acessar /admin/login
-  if (pathname === '/admin/login' && user) {
+  if (pathname === '/admin/login' && isAdministrator(user)) {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
 

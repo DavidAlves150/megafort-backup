@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
 import RegisterSaleModal from '@/components/admin/RegisterSaleModal'
 import toast from 'react-hot-toast'
+import { readAll } from '@/lib/read-all'
+import { storeDate } from '@/lib/store-date'
 
 type Venda = {
   id: string
@@ -27,6 +29,7 @@ export default function RelatoriosPage() {
   const [products, setProducts] = useState<any[]>([])
   const [sales, setSales] = useState<Venda[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [exporting, setExporting] = useState(false)
   const supabase = createClient()
 
@@ -34,13 +37,14 @@ export default function RelatoriosPage() {
 
   async function load() {
     setLoading(true)
-    const [{ data: topView }, { data: clicks }, { data: prods }, { data: salesData, error: salesError }] = await Promise.all([
+    const [{ data: topView, error: viewError }, { data: clicks, error: clicksError }, { data: prods, error: productsError }, { data: salesData, error: salesError }] = await Promise.all([
       supabase.from('produtos').select('id,nome,visualizacoes,preco_venda,preco_compra,imagens:product_images(url,is_principal)').eq('ativo', true).order('visualizacoes', { ascending: false }).limit(10),
-      supabase.from('click_tracking').select('produto_id,tipo,criado_em,produto:produtos(nome)').order('criado_em', { ascending: false }).limit(500),
-      supabase.from('produtos').select('id,nome,preco_compra,preco_venda,estoque,em_promocao,ativo').eq('ativo', true).order('nome').limit(500),
-      supabase.from('vendas').select('id,quantidade,valor_venda,valor_custo,lucro_real,canal_venda,data_venda,produto:produtos(nome)').order('data_venda', { ascending: false }).limit(20),
+      readAll((from, to) => supabase.from('click_tracking').select('produto_id,tipo,criado_em,produto:produtos(nome)').eq('tipo', 'whatsapp').order('criado_em', { ascending: false }).order('id').range(from, to)),
+      readAll((from, to) => supabase.from('produtos').select('id,nome,preco_compra,preco_venda,estoque,em_promocao,ativo').eq('ativo', true).order('nome').order('id').range(from, to)),
+      readAll((from, to) => supabase.from('vendas').select('id,quantidade,valor_venda,valor_custo,lucro_real,canal_venda,data_venda,produto:produtos(nome)').order('data_venda', { ascending: false }).order('id').range(from, to)),
     ])
 
+    setLoadError(!!(salesError || viewError || clicksError || productsError))
     if (salesError) toast.error(`Não foi possível carregar os registros de vendas: ${salesError.message}`)
 
     const clickMap: Record<string, { nome: string; count: number }> = {}
@@ -59,8 +63,8 @@ export default function RelatoriosPage() {
     const dailyClicks = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(today)
       date.setDate(date.getDate() - index)
-      const key = date.toISOString().slice(0, 10)
-      return { dia: key, count: clicks?.filter((click: any) => click.criado_em.slice(0, 10) === key).length || 0 }
+      const key = storeDate(date)
+      return { dia: key, count: clicks?.filter((click: any) => storeDate(click.criado_em) === key).length || 0 }
     }).reverse()
 
     const totalStockValue = prods?.reduce((total: number, product: any) => total + numberValue(product.preco_compra) * numberValue(product.estoque), 0) || 0
@@ -86,7 +90,7 @@ export default function RelatoriosPage() {
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
-      anchor.download = `megafort-catalogo-${new Date().toISOString().slice(0, 10)}.xlsx`
+      anchor.download = `vibe-fitness-catalogo-${new Date().toISOString().slice(0, 10)}.xlsx`
       anchor.click()
       URL.revokeObjectURL(url)
       toast.success('Excel exportado.')
@@ -112,7 +116,7 @@ export default function RelatoriosPage() {
         </div>
       </div>
 
-      {loading || !data ? (
+      {loadError ? <p role="alert">Não foi possível carregar todas as vendas. <button onClick={load}>Tentar novamente</button></p> : loading || !data ? (
         <div className="flex h-48 items-center justify-center"><Loader2 size={28} className="animate-spin text-[var(--brand-primary)]" /></div>
       ) : (
         <>
