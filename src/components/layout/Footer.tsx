@@ -49,7 +49,6 @@ export function Footer() {
                 ['Início',       '/'],
                 ['Sobre nós',    '/sobre'],
                 ['Contato',      '/contato'],
-                ['Admin',        '/admin'],
               ].map(([label, href]) => (
                 <li key={href}>
                   <Link href={href} className="font-body text-muted-foreground text-sm hover:text-[var(--brand-primary)] transition-colors">

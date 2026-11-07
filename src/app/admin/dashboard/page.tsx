@@ -107,11 +107,11 @@ export default function DashboardPage() {
         <div className="flex h-40 items-center justify-center"><Loader2 size={28} className="animate-spin text-[var(--brand-primary)]" /></div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-3">
             {cards.map(card => (
-              <Link key={card.label} href={card.href} className="group block rounded-2xl border border-border bg-card p-4 transition-colors hover:border-[var(--brand-primary)]/20">
+              <Link key={card.label} href={card.href} className="group block min-w-0 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-[var(--brand-primary)]/20">
                 <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${card.bg}`}><card.icon size={16} className={card.color} /></div>
-                <div className={`font-display text-2xl leading-none ${card.color}`}>{card.value}</div>
+                <div className={`font-display text-xl leading-tight tabular-nums [overflow-wrap:anywhere] xl:text-2xl ${card.color}`}>{card.value}</div>
                 <div className="mt-1 font-body text-xs tracking-wide text-muted-foreground">{card.label}</div>
               </Link>
             ))}

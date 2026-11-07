@@ -235,6 +235,10 @@ body.homologacao .wa-float { bottom: 88px; }
          transition-all duration-200;
 }
 
+.price-field {
+  @apply flex min-h-12 items-center gap-2 rounded-xl border border-input bg-background px-3 py-2 font-body text-base text-foreground focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/30;
+}
+
 .form-label {
   @apply block font-body text-muted-foreground text-xs tracking-widest uppercase font-semibold mb-1.5;
 }

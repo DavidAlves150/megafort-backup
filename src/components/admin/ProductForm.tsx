@@ -152,20 +152,6 @@ export function ProductForm({ produto }: Props) {
     </div>
   )
 
-  const Toggle = ({ name, label, desc }: any) => (
-    <Controller control={control} name={name} render={({ field }) => (
-      <label className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 cursor-pointer">
-        <button type="button" onClick={() => field.onChange(!field.value)}
-          className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${field.value ? 'bg-[var(--brand-primary)]' : 'bg-muted border border-border'}`}>
-          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm ${field.value ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
-        </button>
-        <div>
-          <div className="font-body text-foreground text-sm font-semibold">{label}</div>
-          {desc && <div className="font-body text-muted-foreground text-xs">{desc}</div>}
-        </div>
-      </label>
-    )} />
-  )
 
   if (loadError) return <p role="alert" className="p-6 text-red-700">Não foi possível carregar os dados do produto. Recarregue a página antes de editar.</p>
   if (!loaded) return <p role="status" className="p-6">Carregando produto...</p>
@@ -224,32 +210,32 @@ export function ProductForm({ produto }: Props) {
 
       {/* Pricing + Stock */}
       <Section icon={DollarSign} title="PREÇO E ESTOQUE">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-4">
           <div>
-            <label className="form-label">Preço de Compra *</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--brand-primary)] text-sm font-bold">R$</span>
-              <input {...register('preco_compra', { valueAsNumber: true })} type="number" step="0.01" min="0" placeholder="0,00" className="form-input pl-9" />
+            <label htmlFor="preco_compra" className="form-label">Preço de Compra *</label>
+            <div className="price-field">
+              <span aria-hidden="true" className="shrink-0 text-[var(--brand-primary)] text-sm font-bold">R$</span>
+              <input id="preco_compra" {...register('preco_compra', { valueAsNumber: true })} type="number" step="0.01" min="0" placeholder="0,00" className="min-w-0 flex-1 bg-transparent outline-none" />
             </div>
             {errors.preco_compra && <p className="form-error">{errors.preco_compra.message}</p>}
           </div>
           <div>
-            <label className="form-label">Preço de Venda *</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--brand-primary)] text-sm font-bold">R$</span>
-              <input {...register('preco_venda', { valueAsNumber: true })} type="number" step="0.01" min="0.01" placeholder="0,00" className="form-input pl-9" />
+            <label htmlFor="preco_venda" className="form-label">Preço de Venda *</label>
+            <div className="price-field">
+              <span aria-hidden="true" className="shrink-0 text-[var(--brand-primary)] text-sm font-bold">R$</span>
+              <input id="preco_venda" {...register('preco_venda', { valueAsNumber: true })} type="number" step="0.01" min="0.01" placeholder="0,00" className="min-w-0 flex-1 bg-transparent outline-none" />
             </div>
             {errors.preco_venda && <p className="form-error">{errors.preco_venda.message}</p>}
           </div>
           <div>
-            <label className="form-label">Preço Promocional</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-red-400 text-sm font-bold">R$</span>
-              <input {...register('preco_promocional', { valueAsNumber: true })} type="number" step="0.01" min="0" placeholder="0,00" className="form-input pl-9" />
+            <label htmlFor="preco_promocional" className="form-label">Preço Promocional</label>
+            <div className="price-field">
+              <span aria-hidden="true" className="shrink-0 text-red-400 text-sm font-bold">R$</span>
+              <input id="preco_promocional" {...register('preco_promocional', { valueAsNumber: true })} type="number" step="0.01" min="0" placeholder="0,00" className="min-w-0 flex-1 bg-transparent outline-none" />
             </div>
           </div>
           {wVariacoes.length === 0 && <div><label htmlFor="estoque" className="form-label">Estoque disponível</label><input id="estoque" type="number" min="0" step="1" {...register('estoque', { valueAsNumber: true })} className="form-input" />{errors.estoque && <p className="form-error">{errors.estoque.message}</p>}</div>}
-          <div className="sm:col-span-4">
+          <div className="col-span-full">
             <div className="flex items-center justify-between mb-2">
               <label className="form-label mb-0">Controle de Estoque por Tamanho (Sapatos / Roupas)</label>
               <button type="button" onClick={() => {
@@ -370,10 +356,26 @@ export function ProductForm({ produto }: Props) {
 
       {/* Settings */}
       <Section icon={Layers} title="CONFIGURAÇÕES">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Toggle name="ativo"      label="Produto Ativo"  desc="Visível na loja" />
-          <Toggle name="em_destaque" label="Em Destaque"   desc="Aparece na home" />
-          <Toggle name="em_promocao" label="Em Promoção"   desc="Usa preço promocional" />
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-3">
+          {([
+            ['ativo', 'Produto Ativo', 'Visível na loja'],
+            ['em_destaque', 'Em Destaque', 'Aparece na home'],
+            ['em_promocao', 'Em Promoção', 'Usa preço promocional'],
+          ] as const).map(([name, label, description]) => (
+            <Controller key={name} name={name} control={control} render={({ field }) => (
+              <button type="button" role="switch" aria-checked={!!field.value} aria-label={label}
+                onClick={() => field.onChange(!field.value)}
+                className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 text-left">
+                <span aria-hidden="true" className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${field.value ? 'bg-[var(--brand-primary)]' : 'bg-muted ring-1 ring-inset ring-border'}`}>
+                  <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${field.value ? 'translate-x-5' : 'translate-x-0'}`} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-body text-sm font-semibold text-foreground">{label}</span>
+                  <span className="block font-body text-xs text-muted-foreground">{description}</span>
+                </span>
+              </button>
+            )} />
+          ))}
         </div>
       </Section>
 
