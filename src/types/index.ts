@@ -71,6 +71,8 @@ export interface Produto {
   atualizado_em: string
 }
 
+export type ProdutoPublico = Omit<Produto, 'preco_compra'>
+
 export interface ProdutoComMidia extends Produto {
   imagens: ProductImage[]
   videos: ProductVideo[]

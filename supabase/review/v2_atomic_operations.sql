@@ -17,8 +17,8 @@ BEGIN
     RAISE EXCEPTION 'Quantidade ou valores inválidos';
   END IF;
   SELECT * INTO p FROM public.produtos WHERE id = NEW.produto_id FOR UPDATE;
-  IF NOT FOUND OR NOT p.ativo THEN RAISE EXCEPTION 'Produto indisponível'; END IF;
-  IF p.estoque < NEW.quantidade THEN RAISE EXCEPTION 'Estoque insuficiente'; END IF;
+  IF NOT FOUND OR p.ativo IS DISTINCT FROM true THEN RAISE EXCEPTION 'Produto indisponível'; END IF;
+  IF coalesce(p.estoque,0) < NEW.quantidade THEN RAISE EXCEPTION 'Estoque insuficiente'; END IF;
   IF EXISTS (SELECT 1 FROM public.product_variations WHERE produto_id=p.id) THEN
     SELECT s.estoque, v.nome || ': ' || o.valor INTO remaining, label
     FROM public.product_stock_variations s
@@ -122,5 +122,9 @@ REVOKE EXECUTE ON FUNCTION public.vibe_save_product(uuid,timestamptz,jsonb,jsonb
 GRANT EXECUTE ON FUNCTION public.vibe_save_product(uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) TO authenticated;
 ALTER FUNCTION public.fn_set_atualizado_em() SET search_path = '';
 ALTER FUNCTION public.fn_calcular_lucro_venda() SET search_path = '';
-ALTER FUNCTION public.fn_inc_views() SET search_path = public;
+DO $$ BEGIN
+  IF to_regprocedure('public.fn_inc_views()') IS NOT NULL THEN
+    ALTER FUNCTION public.fn_inc_views() SET search_path = public;
+  END IF;
+END $$;
 NOTIFY pgrst, 'reload schema';

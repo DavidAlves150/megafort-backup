@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight, ImageOff, Zap } from 'lucide-react'
-import { Categoria, Marca, Produto } from '@/types'
+import { Categoria, Marca, ProdutoPublico as Produto } from '@/types'
 import { ProductCard } from '@/components/products/ProductCard'
 
 // ── CategoriesSection ──────────────────────────────

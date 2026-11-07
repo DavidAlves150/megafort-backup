@@ -1,4 +1,4 @@
-import { Produto } from '@/types'
+import { ProdutoPublico as Produto } from '@/types'
 import { getPrecoAtual, formatCurrency } from './index'
 
 const DEFAULT_WA = '5598885916645'

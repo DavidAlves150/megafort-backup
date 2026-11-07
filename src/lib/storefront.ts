@@ -1,3 +1,5 @@
+import { PUBLIC_PRODUCT_FIELDS } from '@/lib/public-product'
+import type { ProdutoPublico } from '@/types'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 
@@ -39,14 +41,14 @@ export const getHomeData = unstable_cache(
       supabase.from('categorias').select('*').eq('ativa', true).order('ordem').limit(8),
       supabase
         .from('produtos')
-        .select('*, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)')
+        .select(`${PUBLIC_PRODUCT_FIELDS}, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)`)
         .eq('ativo', true)
         .eq('em_destaque', true)
         .order('criado_em', { ascending: false })
         .limit(8),
       supabase
         .from('produtos')
-        .select('*, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)')
+        .select(`${PUBLIC_PRODUCT_FIELDS}, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)`)
         .eq('ativo', true)
         .eq('em_promocao', true)
         .order('criado_em', { ascending: false })
@@ -57,8 +59,8 @@ export const getHomeData = unstable_cache(
     return {
       banners: bannersResult.data || [],
       categorias: categoriasResult.data || [],
-      destaques: destaquesResult.data || [],
-      promocoes: promocoesResult.data || [],
+      destaques: (destaquesResult.data || []) as unknown as ProdutoPublico[],
+      promocoes: (promocoesResult.data || []) as unknown as ProdutoPublico[],
       marcas: marcasResult.data || [],
     }
   },

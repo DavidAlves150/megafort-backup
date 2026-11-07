@@ -10,7 +10,7 @@ import { WhatsAppButton } from '@/components/layout/WhatsAppButton'
 import { ProductCard } from '@/components/products/ProductCard'
 import { ProductSkeleton } from '@/components/products/ProductSkeleton'
 import { createClient } from '@/lib/supabase/client'
-import { Produto, Categoria, Marca } from '@/types'
+import { ProdutoPublico as Produto, Categoria, Marca } from '@/types'
 import { cn } from '@/lib/utils'
 
 const CATALOG_PRODUCT_SELECT = `

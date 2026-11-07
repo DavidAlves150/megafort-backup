@@ -14,6 +14,19 @@ Banco de testes: `bzhrugqkwxlyfdgtenlt` (vibe-fitness-homologacao).
 - Correção do envio de múltiplas imagens, dos botões de remoção e do foco nos campos de edição.
 - Atualização de dependências e testes automatizados.
 
+## Validação em 06/11/2026
+
+- Prévia publicada: https://deploy-preview-1--vibefitslp.netlify.app.
+- Login administrativo real, edição de produto, venda de duas unidades P e despesa validados no Chrome.
+- Venda fictícia: receita R$ 200, custo R$ 80, lucro bruto R$ 120; estoque total 10 → 8. Despesa R$ 20 → resultado operacional R$ 100.
+- Exportação baixada e lida: catálogo com dois produtos e linha de totais.
+- Dez testes automatizados e build Next.js aprovados. Datas de despesas e cliques corrigidas para America/Sao_Paulo.
+- Migração incremental ensaiada em homologação; suíte de transações aprovada também com a restrição legada de canal de venda.
+- Captura local de dados das 15 tabelas públicas e esquema do original, sem alteração remota. Não contém senhas, sessões ou arquivos binários do Storage; não equivale a um backup integral do projeto.
+- Envio de imagem pelo Chrome pendente: a extensão precisa de acesso a URLs de arquivos. Nova conferência móvel pendente: o navegador não aplicou a largura solicitada.
+- WhatsApp pendente de confirmação: painel original e cabeçalho legado contêm números diferentes.
+- Advisor de segurança da homologação: alerta de proteção contra senhas vazadas desabilitada; não declarar auditoria sem alertas. A revisão de exposição pública de custos também permanece pendente.
+
 ## Como validar
 
 1. Entrar na prévia usando exclusivamente a conta criada no banco de homologação.
@@ -32,7 +45,7 @@ Não habilitar essa variável antes de:
 
 - Concluir os testes autenticados e a revisão visual da prévia.
 - Fazer backup verificável do banco original, incluindo esquema e dados; preservar também a referência do deploy vigente.
-- Comparar o esquema original com a homologação e preparar uma migração incremental revisada. Os arquivos em `supabase/review` são a implementação testada em homologação, não uma migração completa para o banco original.
+- Revisar e executar juntos `supabase/review/v2_production_prerequisites.sql` e `v2_atomic_operations.sql` em uma transação após os bloqueios acima serem resolvidos. Foram ensaiados na homologação; ainda não executados no original. Preservam a restrição legada de canal e adicionam controle de edição simultânea ausente no original.
 - Definir `app_metadata.role=admin` somente para a conta administrativa existente confirmada. A auditoria inicial encontrou zero contas com essa role.
 - Corrigir as políticas de acesso do original, inclusive as tabelas financeiras existentes, preservando seus registros.
 - Validar os totais legados. A comparação inicial verificou uma venda com total de R$ 299,97; isso não comprova pagamento ou saldo bancário.

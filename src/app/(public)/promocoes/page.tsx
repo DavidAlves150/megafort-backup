@@ -1,3 +1,4 @@
+import { PUBLIC_PRODUCT_FIELDS } from '@/lib/public-product'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/layout/WhatsAppButton'
@@ -9,7 +10,7 @@ export const metadata = { title: 'Promoções | VIBE FITNESS' }
 export default async function PromocoesPage() {
   const supabase = await createClient()
   const { data } = await supabase.from('produtos')
-    .select('*, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)')
+    .select(`${PUBLIC_PRODUCT_FIELDS}, categoria:categorias(nome,slug), marca:marcas(nome), imagens:product_images(url,is_principal,ordem)`)
     .eq('ativo', true).eq('em_promocao', true)
     .order('criado_em', { ascending: false }).limit(60)
   const produtos = (data || []) as any[]
