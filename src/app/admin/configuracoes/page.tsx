@@ -76,8 +76,8 @@ export default function ConfiguracoesPage() {
       </Section>
 
       <Section icon={Phone} title="CONTATO">
-        <Field cfg={cfg} set={set} k="whatsapp" label="WhatsApp (somente números)" placeholder="5598885916645"/>
-        <p className="font-body text-muted-foreground text-xs -mt-2">Ex: 5598885916645 (DDI+DDD+número)</p>
+        <Field cfg={cfg} set={set} k="whatsapp" label="WhatsApp (somente números)" placeholder="5598985916645"/>
+        <p className="font-body text-muted-foreground text-xs -mt-2">Ex: 5598985916645 (DDI+DDD+número)</p>
         <Field cfg={cfg} set={set} k="instagram" label="Instagram (URL completa)" placeholder="https://www.instagram.com/vibefit_oficial1"/>
         <Field cfg={cfg} set={set} k="instagram_user" label="Usuário do Instagram (@...)" placeholder="vibefit_oficial1"/>
       </Section>

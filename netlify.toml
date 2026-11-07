@@ -6,7 +6,7 @@
   NODE_VERSION = "22"
   NPM_FLAGS = "--legacy-peer-deps"
   NEXT_TELEMETRY_DISABLED = "1"
-  NEXT_PUBLIC_WHATSAPP = "5598885916645"
+  NEXT_PUBLIC_WHATSAPP = "5598985916645"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -25,6 +25,13 @@
   NEXT_PUBLIC_SUPABASE_URL = "https://bzhrugqkwxlyfdgtenlt.supabase.co"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_2iW1rcg9QePwOUEM3RJzfw_UF1LFCmc"
   NEXT_PUBLIC_APP_ENV = "homologacao"
+
+[context.production.environment]
+  NEXT_PUBLIC_SUPABASE_URL = "https://dpksjzfopgpytmfyydol.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_265j-WR18iU9cpC5s8wHIw_yoqKgIm4"
+  NEXT_PUBLIC_APP_ENV = "production"
+  NEXT_PUBLIC_SITE_URL = "https://vibefitslp.netlify.app"
+  VIBE_V2_PRODUCTION_APPROVED = "true"
 
 [context.branch-deploy.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://bzhrugqkwxlyfdgtenlt.supabase.co"

@@ -148,7 +148,7 @@ export function Header() {
               </nav>
 
               <div className="p-4 border-t border-border space-y-2">
-                <Link href="https://wa.me/5598885916645" target="_blank"
+                <Link href="https://wa.me/5598985916645" target="_blank"
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-500 font-body font-semibold text-sm">
                   <WaIcon /> WhatsApp
                 </Link>

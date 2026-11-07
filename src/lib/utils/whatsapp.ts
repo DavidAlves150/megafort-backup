@@ -1,7 +1,7 @@
 import { ProdutoPublico as Produto } from '@/types'
 import { getPrecoAtual, formatCurrency } from './index'
 
-const DEFAULT_WA = '5598885916645'
+const DEFAULT_WA = '5598985916645'
 
 export function getWhatsApp(): string {
   return process.env.NEXT_PUBLIC_WHATSAPP || DEFAULT_WA

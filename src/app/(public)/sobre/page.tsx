@@ -58,7 +58,7 @@ export default async function SobrePage() {
               </div>
             ))}
             <div className="flex flex-col sm:flex-row gap-3 mt-4">
-              <Link href={`https://wa.me/${cfg.whatsapp || '5598885916645'}`} target="_blank"
+              <Link href={`https://wa.me/${cfg.whatsapp || '5598985916645'}`} target="_blank"
                 className="flex items-center justify-center gap-2 px-5 py-3 bg-green-500/10 border border-green-500/20 text-green-500 rounded-xl font-body font-semibold text-sm hover:bg-green-500/20 transition-colors">
                 <Phone size={15} /> WhatsApp
               </Link>

@@ -67,9 +67,9 @@ export function Footer() {
               <li className="flex items-start gap-2">
                 <Phone size={14} className="text-[var(--brand-primary)] mt-0.5 flex-shrink-0" />
                 <div>
-                  <Link href="https://wa.me/5598885916645" target="_blank"
+                  <Link href="https://wa.me/5598985916645" target="_blank"
                     className="font-body text-muted-foreground text-sm hover:text-[var(--brand-primary)] transition-colors">
-                    (98) 8591-6645
+                    (98) 98591-6645
                   </Link>
                 </div>
               </li>

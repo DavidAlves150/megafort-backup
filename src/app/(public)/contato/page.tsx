@@ -12,7 +12,7 @@ export default async function ContatoPage() {
   const { data } = await supabase.from('configuracoes').select('chave,valor')
   const cfg: Record<string,string> = {}
   data?.forEach(c => { if (c.valor) cfg[c.chave] = c.valor })
-  const wa = cfg.whatsapp || '5598885916645'
+  const wa = cfg.whatsapp || '5598985916645'
 
   return (
     <>
@@ -30,7 +30,7 @@ export default async function ContatoPage() {
               <Phone size={22} className="text-green-500" />
             </div>
             <h2 className="font-display text-foreground text-xl tracking-widest mb-1">WHATSAPP</h2>
-            <p className="font-body text-green-500 font-semibold">(98) 8591-6645</p>
+            <p className="font-body text-green-500 font-semibold">(98) 98591-6645</p>
             <p className="font-body text-muted-foreground text-xs mt-1">Clique para iniciar uma conversa</p>
           </Link>
 
