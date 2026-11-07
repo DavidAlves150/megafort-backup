@@ -6,6 +6,7 @@ import { Package, TrendingUp, AlertTriangle, DollarSign, ShoppingBag, Tag, Award
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
 import { readAll } from '@/lib/read-all'
+import { storeDate } from '@/lib/store-date'
 import { getEstoqueStatus } from '@/types'
 
 interface Stats {
@@ -29,7 +30,7 @@ export default function DashboardPage() {
     try {
       setLoading(true)
       const weekStart = new Date(Date.now() - 7 * 86400000).toISOString()
-      const today = new Date().toISOString().slice(0, 10)
+      const today = storeDate()
       const results = await Promise.all([
         readAll((from, to) => supabase.from('produtos').select('preco_compra,preco_venda,estoque,ativo,em_promocao,em_destaque').order('id').range(from, to)),
         supabase.from('categorias').select('id', { count: 'exact', head: true }),
@@ -55,7 +56,7 @@ export default function DashboardPage() {
         marcas: brandCount || 0,
         valorEstoque: productsList.reduce((total, product) => total + (product.preco_compra * product.estoque), 0),
         lucroTotal: productsList.reduce((total, product) => total + ((product.preco_venda - product.preco_compra) * product.estoque), 0),
-        clicksHoje: clicks?.filter(click => click.criado_em.slice(0, 10) === today).length || 0,
+        clicksHoje: clicks?.filter(click => storeDate(click.criado_em) === today).length || 0,
         clicksSemana: clicks?.length || 0,
       })
       setRecents(recentProducts || [])

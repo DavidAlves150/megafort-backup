@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { readAll } from '@/lib/read-all'
+import { storeDate } from '@/lib/store-date'
 
 type Venda = {
   id: string
@@ -29,7 +30,7 @@ type Despesa = {
 }
 
 const CATEGORIAS_DESPESA = ['Aluguel', 'Água', 'Energia', 'Internet', 'Marketing', 'Frete', 'Impostos', 'Embalagens', 'Serviços', 'Outros']
-const initialExpense = { descricao: '', categoria: 'Outros', valor: '', data_despesa: new Date().toISOString().slice(0, 10), recorrente: false, observacoes: '' }
+const initialExpense = () => ({ descricao: '', categoria: 'Outros', valor: '', data_despesa: storeDate(), recorrente: false, observacoes: '' })
 
 function numberValue(value: number | string | null | undefined) {
   return Number(value) || 0

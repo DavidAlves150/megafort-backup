@@ -6,6 +6,7 @@
   NODE_VERSION = "22"
   NPM_FLAGS = "--legacy-peer-deps"
   NEXT_TELEMETRY_DISABLED = "1"
+  NEXT_PUBLIC_WHATSAPP = "5598885916645"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/utils'
 import RegisterSaleModal from '@/components/admin/RegisterSaleModal'
 import toast from 'react-hot-toast'
 import { readAll } from '@/lib/read-all'
+import { storeDate } from '@/lib/store-date'
 
 type Venda = {
   id: string
@@ -62,8 +63,8 @@ export default function RelatoriosPage() {
     const dailyClicks = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(today)
       date.setDate(date.getDate() - index)
-      const key = date.toISOString().slice(0, 10)
-      return { dia: key, count: clicks?.filter((click: any) => click.criado_em.slice(0, 10) === key).length || 0 }
+      const key = storeDate(date)
+      return { dia: key, count: clicks?.filter((click: any) => storeDate(click.criado_em) === key).length || 0 }
     }).reverse()
 
     const totalStockValue = prods?.reduce((total: number, product: any) => total + numberValue(product.preco_compra) * numberValue(product.estoque), 0) || 0

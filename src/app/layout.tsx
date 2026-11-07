@@ -66,8 +66,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         <style dangerouslySetInnerHTML={{ __html: brandStyles }} />
       </head>
-      <body>
-        {process.env.NEXT_PUBLIC_APP_ENV === 'homologacao' && <div className="bg-amber-100 px-4 py-2 text-center text-sm font-semibold text-amber-950">Ambiente de testes — dados fictícios, sem pedidos reais.</div>}
+      <body className={process.env.NEXT_PUBLIC_APP_ENV === 'homologacao' ? 'homologacao' : undefined}>
+        {process.env.NEXT_PUBLIC_APP_ENV === 'homologacao' && <div role="note" className="fixed inset-x-0 bottom-0 z-[100] bg-amber-100 px-4 py-2 text-center text-sm font-semibold text-amber-950">Ambiente de testes — dados fictícios, sem pedidos reais.</div>}
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="vibe-fitness-theme">
           <Providers>{children}</Providers>
         </ThemeProvider>

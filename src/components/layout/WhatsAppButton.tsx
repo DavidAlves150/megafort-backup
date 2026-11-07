@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getWhatsApp } from '@/lib/utils/whatsapp'
 
 export function WhatsAppButton() {
   const [visible, setVisible] = useState(false)
@@ -11,7 +12,7 @@ export function WhatsAppButton() {
     return () => clearTimeout(t)
   }, [])
 
-  const wa = process.env.NEXT_PUBLIC_WHATSAPP || '5598885916645'
+  const wa = getWhatsApp()
 
   return (
     <AnimatePresence>
