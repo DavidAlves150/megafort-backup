@@ -15,7 +15,7 @@ import { ProductCard } from '@/components/products/ProductCard'
 import { createClient } from '@/lib/supabase/client'
 import { ProdutoPublico as Produto, getEstoqueStatus } from '@/types'
 import { formatCurrency, getPrecoAtual, isNovidade, cn } from '@/lib/utils'
-import { trackAndOpenWhatsApp } from '@/lib/utils/whatsapp'
+import { PhotoPurchaseButton } from '@/components/products/PhotoPurchaseButton'
 
 export default function ProdutoPage() {
   const { slug }  = useParams<{ slug: string }>()
@@ -77,7 +77,7 @@ export default function ProdutoPage() {
     </>
   )
 
-  const imgs    = produto.imagens?.sort((a: any, b: any) => a.ordem - b.ordem) || []
+  const imgs    = produto.imagens?.filter(image => image.url).sort((a: any, b: any) => a.ordem - b.ordem) || []
   const vids    = produto.videos?.sort((a: any, b: any) => a.ordem - b.ordem) || []
   const preco   = getPrecoAtual(produto)
   const status  = getEstoqueStatus(produto.estoque)
@@ -105,7 +105,7 @@ export default function ProdutoPage() {
         <div className="max-w-7xl mx-auto px-4 pb-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Gallery */}
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               {/* Main media */}
               <div className="relative aspect-square rounded-2xl overflow-hidden bg-card border border-border cursor-zoom-in"
                 onClick={() => !playVid && setZoom(true)}>
@@ -146,15 +146,7 @@ export default function ProdutoPage() {
                 )}
                 {!playVid && <div className="absolute bottom-3 right-3 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white"><ZoomIn size={14} /></div>}
 
-                {/* Dot nav */}
-                {imgs.length > 1 && !playVid && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-                    {imgs.map((_: any, i: number) => (
-                      <button key={i} onClick={e => { e.stopPropagation(); setImgIdx(i) }}
-                        className={cn('h-1.5 rounded-full transition-all', i === imgIdx ? 'bg-[var(--brand-primary)] w-4' : 'bg-white/40 w-1.5')} />
-                    ))}
-                  </div>
-                )}
+                {imgs.length > 1 && !playVid && <span className="absolute bottom-3 left-3 rounded-lg bg-black/60 px-2 py-1 text-xs text-white">{imgIdx + 1} / {imgs.length}</span>}
               </div>
 
               {/* Thumbnails */}
@@ -211,14 +203,14 @@ export default function ProdutoPage() {
 
               {/* CTA */}
               <div className="space-y-3 pt-2">
-                <button onClick={() => trackAndOpenWhatsApp(produto)} disabled={status === 'esgotado'}
+                <PhotoPurchaseButton produto={produto} initialUrl={imgs[imgIdx]?.url} disabled={status === 'esgotado'}
                   className={cn('w-full flex items-center justify-center gap-3 py-5 rounded-2xl font-display text-xl tracking-widest transition-all',
                     status === 'esgotado'
                       ? 'bg-muted text-muted-foreground cursor-not-allowed'
                       : 'bg-[#25D366] text-white hover:bg-[#20b858] hover:-translate-y-0.5 shadow-[0_4px_30px_rgba(37,211,102,0.4)]')}>
                   {status !== 'esgotado' && <WaIcon />}
                   {status === 'esgotado' ? 'PRODUTO ESGOTADO' : 'COMPRAR PELO WHATSAPP'}
-                </button>
+                </PhotoPurchaseButton>
 
                 <button onClick={() => navigator.share?.({ title: produto.nome, url: window.location.href })
                     .catch(() => navigator.clipboard?.writeText(window.location.href))}

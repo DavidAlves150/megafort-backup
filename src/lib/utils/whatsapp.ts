@@ -7,10 +7,16 @@ export function getWhatsApp(): string {
   return process.env.NEXT_PUBLIC_WHATSAPP || DEFAULT_WA
 }
 
-export function buildWhatsAppLink(produto: Produto): string {
+export interface FotoEscolhida { url: string; numero: number }
+
+export function orderMessage(produto: Produto, foto?: FotoEscolhida): string {
   const preco = formatCurrency(getPrecoAtual(produto))
-  const msg = `Olá! Tenho interesse no produto *${produto.nome}* que vi no catálogo da VIBE FITNESS.\n\nPreço: ${preco}\n\nGostaria de mais informações.`
-  return `https://wa.me/${getWhatsApp()}?text=${encodeURIComponent(msg)}`
+  const escolha = foto ? `\n\nEscolhi a foto ${foto.numero}: ${foto.url}` : ''
+  return `Olá! Tenho interesse no produto *${produto.nome}* que vi no catálogo da VIBE FITNESS.\n\nPreço: ${preco}${escolha}\n\nGostaria de mais informações.`
+}
+
+export function buildWhatsAppLink(produto: Produto, foto?: FotoEscolhida): string {
+  return `https://wa.me/${getWhatsApp()}?text=${encodeURIComponent(orderMessage(produto, foto))}`
 }
 
 export function buildWhatsAppGeneral(): string {
@@ -18,7 +24,7 @@ export function buildWhatsAppGeneral(): string {
 }
 
 /** Registra o clique e abre WhatsApp */
-export async function trackAndOpenWhatsApp(produto: Produto): Promise<void> {
+export function trackAndOpenWhatsApp(produto: Produto, foto?: FotoEscolhida): void {
   // Track assíncrono — não bloqueia a abertura
   fetch('/api/track-click', {
     method: 'POST',
@@ -26,5 +32,5 @@ export async function trackAndOpenWhatsApp(produto: Produto): Promise<void> {
     body: JSON.stringify({ produto_id: produto.id, tipo: 'whatsapp' }),
   }).catch(() => {})
 
-  window.open(buildWhatsAppLink(produto), '_blank', 'noopener,noreferrer')
+  window.open(buildWhatsAppLink(produto, foto), '_blank', 'noopener,noreferrer')
 }

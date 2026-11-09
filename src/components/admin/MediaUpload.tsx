@@ -18,7 +18,7 @@ interface MediaUploadProps {
 
 export function MediaUpload({
   images, videos, onImagesChange, onVideosChange,
-  maxImages = 10, maxVideos = 3,
+  maxImages = 30, maxVideos = 3,
   onUploadingChange,
 }: MediaUploadProps) {
   const [uploading, setUploading] = useState(false)

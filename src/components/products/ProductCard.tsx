@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import { ShoppingBag, Play } from 'lucide-react'
 import { ProdutoPublico as Produto } from '@/types'
 import { cn, formatCurrency, getPrecoAtual, getEstoqueStatus, isNovidade } from '@/lib/utils'
-import { trackAndOpenWhatsApp } from '@/lib/utils/whatsapp'
+import { PhotoPurchaseButton } from '@/components/products/PhotoPurchaseButton'
 import { StockBadge } from './StockBadge'
 
 interface ProductCardProps {
@@ -16,10 +16,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ produto, index = 0 }: ProductCardProps) {
-  const [liked, setLiked] = useState(false)
   const [imgIdx, setImgIdx] = useState(0)
 
-  const imagens = produto.imagens?.filter(i => i.url) || []
+  const imagens = produto.imagens?.filter(i => i.url).sort((a,b) => a.ordem - b.ordem) || []
   const hasVideo = (produto.videos?.length ?? 0) > 0
   const mainImg = imagens[0]?.url || null
   const hoverImg = imagens[1]?.url || null
@@ -28,11 +27,6 @@ export function ProductCard({ produto, index = 0 }: ProductCardProps) {
   const temDesconto = produto.em_promocao && produto.preco_promocional && produto.preco_promocional < produto.preco_venda
   const novidade = isNovidade(produto.criado_em)
 
-  const handleBuy = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (status !== 'esgotado') trackAndOpenWhatsApp(produto)
-  }
 
   return (
     <motion.div
@@ -150,8 +144,7 @@ export function ProductCard({ produto, index = 0 }: ProductCardProps) {
         </div>
 
         {/* Buy button */}
-        <button
-          onClick={handleBuy}
+        <PhotoPurchaseButton produto={produto} initialUrl={imagens[imgIdx]?.url}
           disabled={status === 'esgotado'}
           className={cn(
             'mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-display text-sm tracking-widest transition-all duration-300',
@@ -166,7 +159,7 @@ export function ProductCard({ produto, index = 0 }: ProductCardProps) {
               COMPRAR
             </>
           )}
-        </button>
+        </PhotoPurchaseButton>
       </div>
     </motion.div>
   )
