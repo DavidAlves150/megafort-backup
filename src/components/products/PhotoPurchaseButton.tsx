@@ -31,10 +31,14 @@ function PhotoPicker({ produto, urls, initialIndex, onClose }: {
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [index, select] = useState(initialIndex)
-  const [attachment, setAttachment] = useState<{url: string; file: File} | null>(null)
+  const [attachment, setAttachment] = useState<{url: string; file: File | null} | null>(null)
   const [shareError, setShareError] = useState('')
   const url = new URL(urls[index], window.location.origin).href
   const photo = { url, numero: index + 1 }
+  const caption = orderMessage(produto) + `\n\nEscolhi a foto ${index + 1}.`
+  const canPrepare = typeof navigator.share === 'function' && typeof navigator.canShare === 'function'
+  const preparing = canPrepare && attachment?.url !== url
+  const file = attachment?.url === url ? attachment.file : null
 
   useEffect(() => {
     const element = dialog.current!
@@ -45,20 +49,20 @@ function PhotoPicker({ produto, urls, initialIndex, onClose }: {
   useEffect(() => {
     setAttachment(null)
     setShareError('')
-    if (!navigator.canShare?.({files: [new File([], 'foto.jpg', {type: 'image/jpeg'})]})) return
+    if (!canPrepare) return
     const controller = new AbortController()
     async function prepare() {
       const response = await fetch(url, {signal: controller.signal})
-      if (!response.ok) return
+      if (!response.ok) throw new Error('Imagem indisponível')
       const blob = await response.blob()
-      if (!blob.type.startsWith('image/')) return
+      if (!blob.type.startsWith('image/')) throw new Error('Formato indisponível')
       const ext = blob.type.split('/')[1].split('+')[0]
       const file = new File([blob], `${produto.slug}-foto-${index+1}.${ext}`, {type: blob.type})
-      if (!controller.signal.aborted && navigator.canShare({files: [file]})) setAttachment({url, file})
+      if (!controller.signal.aborted) setAttachment({url, file: navigator.canShare({files: [file], text: caption}) ? file : null})
     }
-    prepare().catch(() => {})
+    prepare().catch(() => { if (!controller.signal.aborted) setAttachment({url, file: null}) })
     return () => controller.abort()
-  }, [url, index, produto.slug])
+  }, [url, index, produto.slug, caption, canPrepare])
 
   return <dialog ref={dialog} onCancel={onClose} aria-label="Escolher foto para o pedido"
     className="m-auto max-h-[92dvh] w-[min(92vw,26rem)] overflow-y-auto rounded-2xl border border-border bg-card p-4 text-foreground shadow-xl backdrop:bg-black/60">
@@ -80,15 +84,21 @@ function PhotoPicker({ produto, urls, initialIndex, onClose }: {
         <img src={src} loading="lazy" alt="" className="h-full w-full object-cover"/>
       </button>)}
     </div>}
-    <button type="button" className="w-full rounded-xl bg-[#25D366] px-3 py-3 font-semibold text-black"
-      onClick={() => { trackAndOpenWhatsApp(produto, photo); onClose() }}>Pedir esta opção pelo WhatsApp</button>
-    {attachment?.url === url && <div className="mt-3 text-center">
-      <button type="button" className="p-2 text-sm font-semibold underline" onClick={async () => {
-        try { await navigator.share({files:[attachment.file], text:orderMessage(produto, photo)}) }
-        catch(error) { if (!(error instanceof DOMException && error.name==='AbortError')) setShareError('Use o botão acima para enviar o link da foto.') }
-      }}>Compartilhar a foto como arquivo</button>
-      <p className="text-xs text-muted-foreground">Escolha o WhatsApp e o contato da loja no seu celular.</p>
+    {(preparing || file) && <div className="mb-2 text-center">
+      <button type="button" disabled={!file} className="w-full rounded-xl bg-[#25D366] px-3 py-3 font-semibold text-black disabled:opacity-60" onClick={async () => {
+        if (!file) return
+        setShareError('')
+        try { await navigator.share({files:[file], text:caption}) }
+        catch(error) { if (!(error instanceof DOMException && error.name==='AbortError')) setShareError('Não foi possível compartilhar a foto. Tente novamente ou envie o link abaixo.') }
+      }}>{preparing ? 'Preparando a foto…' : 'Enviar foto com mensagem'}</button>
+      <p className="mt-2 text-xs text-muted-foreground">Selecione o WhatsApp e depois a VIBE FITNESS, (98) 98591-6645.</p>
+      {file && navigator.clipboard && <button type="button" className="p-2 text-xs underline" onClick={async () => {
+        try { await navigator.clipboard.writeText(caption); setShareError('Mensagem copiada para colar na legenda.') }
+        catch { setShareError(caption) }
+      }}>Copiar mensagem</button>}
     </div>}
+    <button type="button" className={file || preparing ? 'w-full rounded-xl border border-border p-2 text-sm' : 'w-full rounded-xl bg-[#25D366] px-3 py-3 font-semibold text-black'}
+      onClick={() => { trackAndOpenWhatsApp(produto, photo); onClose() }}>Enviar link da foto para a loja</button>
     {shareError && <p role="status" className="mt-2 text-sm">{shareError}</p>}
   </dialog>
 }
